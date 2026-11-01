@@ -4,12 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Family – Additional Features</title>
-<link rel="stylesheet" href="fonts.css?v=8">
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="fonts.css?v=10">
+<link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 <!-- Figma: Yashis-Imaginarium_22-jun, page "Family_Additional Features" (81564:168380), section "Manager's view".
      Every screen is the 375 x 812 design frame; other viewports scale it, never re-lay it out. -->
+<!-- version picker (outside the phone frame) -->
+<label class="ver" title="Switch the Send Reminder animation">
+  <span class="ver-l">Version</span>
+  <select id="ver">
+    <option value="1">V1 · Badge reveal</option>
+    <option value="2">V2 · Fly to member</option>
+  </select>
+</label>
 <div class="stage">
   <div class="device" id="device">
 
@@ -237,10 +245,18 @@
           <img class="rv-av" id="rvAvatar" src="assets/avatar-shree.png" alt="">
           <img class="rv-logo" id="rvLogo" src="assets/logo-netflix.png" alt="">
         </div>
+        <!-- V2: the benefit flies along an arc onto the member -->
+        <div class="fly" aria-hidden="true">
+          <svg class="fly-trail" viewBox="0 0 311 140" preserveAspectRatio="none"><path id="flyPath" d="M52 84 C 105 10, 205 4, 277 51" /></svg>
+          <span class="fly-halo"></span>
+          <span class="fly-me"><img class="fly-av" src="assets/avatar-shree.png" alt=""><img class="fly-badge" src="assets/logo-netflix.png" alt=""></span>
+          <img class="fly-logo" src="assets/logo-netflix.png" alt="">
+        </div>
         <div class="modal-body">
           <p class="t16b" id="modalTitle">Reminder sent successfully!</p>
           <p class="t14 cap2" id="modalText">Shree Verma has been notified about<br>the Netflix benefit.</p>
         </div>
+        <button class="okbtn btn48" data-ok disabled>Ok, Done</button>
       </div>
     </div>
 
@@ -248,6 +264,6 @@
     <div class="toast" id="toast"></div>
   </div>
 </div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

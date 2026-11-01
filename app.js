@@ -9,7 +9,7 @@ const device = document.getElementById('device');
     const phone = vw <= 520 && matchMedia('(pointer: coarse), (max-width: 520px)').matches;
     root.classList.toggle('phone', phone);
     if (phone) { const s = vw / W; root.style.setProperty('--s', s); root.style.setProperty('--dh', (vh / s) + 'px'); }
-    else { root.style.setProperty('--s', Math.min(1, (vh - 48) / (H + 20), (vw - 48) / (W + 20))); root.style.removeProperty('--dh'); }
+    else { root.style.setProperty('--s', Math.min(1, (vh - 150) / (H + 20), (vw - 48) / (W + 20))); root.style.removeProperty('--dh'); }
   }
   run(); addEventListener('resize', run);
 })();
@@ -117,6 +117,19 @@ function open(el) { el.classList.add('open'); el.setAttribute('aria-hidden', 'fa
 function close(el) { el.classList.remove('open'); el.setAttribute('aria-hidden', 'true'); }
 
 let pendingKey = null, autoClose;
+// ---------- version (V1 badge reveal / V2 fly to member) ----------
+const verSel = document.getElementById('ver');
+let VER = (() => { const q = new URLSearchParams(location.search).get('ver'); if (q) return q === '2' ? 2 : 1; try { return +localStorage.getItem('fam-ver') === 2 ? 2 : 1; } catch { return 1; } })();
+verSel.value = String(VER);
+verSel.addEventListener('change', () => {
+  VER = +verSel.value;
+  try { localStorage.setItem('fam-ver', VER); } catch {}
+  const u = new URL(location.href); u.searchParams.set('ver', VER); history.replaceState(null, '', u);
+  sent.clear();                                   // reset the cards so the new animation can be tried straight away
+  homeList.innerHTML = LISTS.home.map(card).join(''); detailList.innerHTML = LISTS.detail.map(card).join('');
+  if (sheet.classList.contains('open')) renderSheet();
+  toast(VER === 2 ? 'V2 · Fly to member' : 'V1 · Badge reveal');
+});
 function sendReminder(key) {
   const [b, p] = key.split(':');
   sent.add(key);
@@ -125,15 +138,19 @@ function sendReminder(key) {
   const av = document.getElementById('rvAvatar'), logo = document.getElementById('rvLogo');
   av.src = A + (document.querySelector(`[data-remind="${key}"]`)?.closest('.bcard')?.querySelector('.av36 img')?.getAttribute('src')?.replace(A, '') || PEOPLE[p].avatar);
   logo.src = A + BENEFITS[b].logo;
+  modal.querySelector('.fly-av').src = av.src;
+  modal.querySelectorAll('.fly-logo, .fly-badge').forEach(i => { i.src = logo.src; });
   modal.classList.remove('closing');
+  modal.classList.toggle('v2', VER === 2);
   open(modal);
-  playReveal();
+  VER === 2 ? playFly() : playReveal();
 }
 
 // Close: the popup shrinks onto the card that sent the reminder and dissolves into it,
 // then that card glows and its button ticks over to "sent".
-function closeModal() {
+function closeModal(force) {
   if (!modal.classList.contains('open') || modal.classList.contains('closing')) return;
+  if (VER === 2 && !force && modal.querySelector('.okbtn').disabled) return;   // V2 waits for Ok, Done
   clearTimeout(autoClose);
   modal.classList.add('closing');
   const key = pendingKey; pendingKey = null;
@@ -226,11 +243,56 @@ function playReveal() {
 }
 function finishReveal() { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 1900); }
 
+// ---------- V2 popup: benefit flies along an arc and docks on the member (~2 s) ----------
+function playFly() {
+  running.forEach(a => a.cancel()); running = [];
+  const q = sel => modal.querySelector(sel);
+  const logo = q('.fly-logo'), me = q('.fly-me'), av = q('.fly-av'), badge = q('.fly-badge'), trail = q('.fly-trail'), path = q('#flyPath'), halo = q('.fly-halo'), ok = q('.okbtn');
+  ok.disabled = true; ok.classList.remove('shine');
+  const L = path.getTotalLength();
+  path.style.strokeDasharray = L; path.style.strokeDashoffset = L;
+  const T = reduce ? 1 : 2100, base = { duration: T, delay: reduce ? 0 : 140, fill: 'both' };
+  const glide = 'cubic-bezier(.45,0,.2,1)', spring = 'cubic-bezier(.3,1.6,.5,1)', ease = 'cubic-bezier(.22,1,.36,1)';
+  running.push(
+    // 1 pop in at the start of the arc, 2 glide along it (turning + shrinking), 3 dock as the badge
+    logo.animate([
+      { offset: 0,   offsetDistance: '0%', transform: 'rotate(-14deg) scale(.55)', opacity: 0, easing: spring },
+      { offset: .14, offsetDistance: '0%', transform: 'rotate(-14deg) scale(1)', opacity: 1, easing: 'linear' },
+      { offset: .2,  offsetDistance: '0%', transform: 'rotate(-14deg) scale(1)', easing: glide },
+      { offset: .4,  offsetDistance: '42%', transform: 'rotate(4deg) scale(.96)', easing: glide },
+      { offset: .56, offsetDistance: '100%', transform: 'rotate(18deg) scale(.35)', opacity: 1 },
+      { offset: .57, offsetDistance: '100%', transform: 'rotate(18deg) scale(.35)', opacity: 0 },
+      { offset: 1,   offsetDistance: '100%', transform: 'rotate(18deg) scale(.35)', opacity: 0 },
+    ], base),
+    trail.animate([{ offset: 0, opacity: 0 }, { offset: .12, opacity: .9 }, { offset: .6, opacity: .9 }, { offset: .8, opacity: 0 }, { offset: 1, opacity: 0 }], base),
+    path.animate([{ offset: 0, strokeDashoffset: L }, { offset: .14, strokeDashoffset: L * .55, easing: glide }, { offset: .5, strokeDashoffset: 0 }, { offset: 1, strokeDashoffset: 0 }], base),
+    av.animate([
+      { offset: 0, transform: 'scale(.6)', opacity: 0, easing: spring }, { offset: .16, transform: 'scale(1)', opacity: 1 },
+      { offset: .56, transform: 'scale(1)', easing: 'ease-out' }, { offset: .6, transform: 'scale(.9)', easing: spring }, { offset: .68, transform: 'scale(1)' }, { offset: 1, transform: 'scale(1)', opacity: 1 },
+    ], base),
+    badge.animate([
+      { offset: 0, opacity: 0, transform: 'rotate(18deg) scale(1)' }, { offset: .565, opacity: 0, transform: 'rotate(18deg) scale(1)' },
+      { offset: .57, opacity: 1, transform: 'rotate(18deg) scale(1)', easing: spring }, { offset: .66, opacity: 1, transform: 'rotate(0deg) scale(1.15)', easing: ease },
+      { offset: .72, transform: 'rotate(0deg) scale(1)' }, { offset: 1, opacity: 1, transform: 'rotate(0deg) scale(1)' },
+    ], base),
+    // 4 member glides to centre, grows, green halo breathes in
+    me.animate([
+      { offset: 0, transform: 'translate(0,0) scale(1)' }, { offset: .68, transform: 'translate(0,0) scale(1)', easing: 'cubic-bezier(.65,0,.25,1)' },
+      { offset: .9, transform: 'translate(-102.5px,0) scale(1.38)', easing: ease }, { offset: 1, transform: 'translate(-102.5px,0) scale(1.38)' },
+    ], base),
+    halo.animate([{ offset: 0, opacity: 0, transform: 'scale(.6)' }, { offset: .8, opacity: 0, transform: 'scale(.6)', easing: ease }, { offset: .95, opacity: 1, transform: 'scale(1.5)' }, { offset: 1, opacity: 1, transform: 'scale(1.45)' }], base),
+  );
+  if (reduce) { ok.disabled = false; return; }
+  setTimeout(() => { if (modal.classList.contains('open')) { navigator.vibrate?.(10); burst(me, 'soft'); } }, 140 + T * .57);
+  setTimeout(() => { if (!modal.classList.contains('open')) return; ok.disabled = false; ok.classList.add('shine'); }, 140 + T * .9);
+}
+
 // ---------- confetti (canvas inside the 375 x 812 frame) ----------
 const cvs = document.getElementById('confetti'), ctx = cvs.getContext('2d');
 let parts = [], raf = 0;
 const COLORS = ['#E50914', '#FF5A5F', '#FFC145', '#2EC4B6', '#3A86FF', '#8338EC', '#FF8FAB', '#06D6A0'];
-function burst(fromEl) {
+const SOFT = ['#4CC98C', '#9BE3BF', '#FFD166', '#7FD1AE', '#E50914', '#B5EAD0'];
+function burst(fromEl, mode) {
   const dpr = Math.min(3, devicePixelRatio || 1), W = device.offsetWidth, H = device.offsetHeight;
   if (cvs.width !== W * dpr) { cvs.width = W * dpr; cvs.height = H * dpr; }
   const d = device.getBoundingClientRect(), r = fromEl.getBoundingClientRect(), k = W / d.width;
@@ -241,9 +303,14 @@ function burst(fromEl) {
       w: 5 + Math.random() * 5, h: 8 + Math.random() * 7, c: COLORS[i % COLORS.length], shape: Math.random() < .28 ? 'dot' : Math.random() < .5 ? 'rect' : 'ribbon',
       life: 0, max: 95 + Math.random() * 55, tilt: Math.random() * 6.28 });
   } };
-  add(70, ox, oy, Math.PI * 1.25, -Math.PI / 2, 11);          // main burst from the member
-  add(26, 24, oy + 40, Math.PI / 3, -Math.PI / 3, 12);        // side cannons
-  add(26, W - 24, oy + 40, Math.PI / 3, -Math.PI * 2 / 3, 12);
+  if (mode === 'soft') {                                      // V2: a light sparkle off the docking point
+    const n0 = parts.length; add(34, ox + 14, oy - 14, Math.PI * 2, 0, 5.5);
+    for (let i = n0; i < parts.length; i++) { const p = parts[i]; p.c = SOFT[i % SOFT.length]; p.g *= .45; p.w *= .7; p.h *= .7; p.max *= .7; }
+  } else {
+    add(70, ox, oy, Math.PI * 1.25, -Math.PI / 2, 11);        // main burst from the member
+    add(26, 24, oy + 40, Math.PI / 3, -Math.PI / 3, 12);      // side cannons
+    add(26, W - 24, oy + 40, Math.PI / 3, -Math.PI * 2 / 3, 12);
+  }
   if (!raf) { let last = performance.now(); raf = requestAnimationFrame(function step(now) {
     const dt = Math.min(2.5, (now - last) / 16.67); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -287,11 +354,12 @@ function toast(msg) {
 }
 
 device.addEventListener('click', e => {
-  const t = e.target.closest('[data-close-modal], button, [data-close-sheet], .tap');
+  const t = e.target.closest('[data-ok], [data-close-modal], button, [data-close-sheet], .tap');
   if (!t) return;
   if (t.dataset.remind && !t.disabled) return sendReminder(t.dataset.remind);
   if (t.hasAttribute('data-open-sheet')) { chip = null; renderSheet(); sheet.querySelector('.sheet-scroll').scrollTop = 0; return open(sheet); }
   if (t.hasAttribute('data-close-sheet')) return close(sheet);
+  if (t.hasAttribute('data-ok')) return closeModal(true);
   if (t.hasAttribute('data-close-modal')) return closeModal();
   if (t.dataset.chip) { chip = chip === t.dataset.chip ? null : t.dataset.chip; return renderSheet(); }
   if (t.dataset.go) return go(t.dataset.go);
