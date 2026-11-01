@@ -65,9 +65,14 @@ function card([b, p, av]) {
     </div>
   </div>`;
 }
-// fake countdown: every copy of a tag reads the same clock, so home / sheet / detail stay in sync
+// fake countdown: each benefit starts from its own random time and ticks on its own off-beat,
+// so two timers never match or roll together (copies of the same benefit on other screens stay equal)
 const T0 = Date.now();
-const left = b => Math.max(0, BENEFITS[b].timer - Math.floor((Date.now() - T0) / 1000));
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+BENEFITS.netflix.timer = rnd(6, 20) * 3600 + rnd(0, 59) * 60 + rnd(0, 59);   // under a day -> red tag
+BENEFITS.zee5.timer = rnd(26, 40) * 3600 + rnd(0, 59) * 60 + rnd(0, 59);     // a day+ -> amber tag
+for (const B of Object.values(BENEFITS)) if (B.timer) B.phase = rnd(80, 920);
+const left = b => Math.max(0, BENEFITS[b].timer - Math.floor((Date.now() - T0 - BENEFITS[b].phase) / 1000));
 const hms = n => [Math.floor(n / 3600), Math.floor(n / 60) % 60, n % 60].map(v => String(v).padStart(2, '0')).join(':');
 const digits = str => [...str].map(c => `<span class="d">${c}</span>`).join('');
 function tagHtml(b) {
@@ -84,7 +89,7 @@ setInterval(() => {
     });
     if (next.endsWith(':00')) { tag.classList.remove('tick'); void tag.offsetWidth; tag.classList.add('tick'); }
   });
-}, 1000);
+}, 50);   // checked often; each tag only changes on its own second boundary
 
 const remindBtn = (key, done) => done
   ? `<button class="remind sent" disabled data-remind="${key}">Send Reminder<img class="ic-tick" src="${A}tick-grey.svg" alt=""></button>`
