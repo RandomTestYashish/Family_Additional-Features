@@ -34,8 +34,8 @@ document.getElementById('relations').innerHTML =
 
 // ---------- benefits ----------
 const BENEFITS = {
-  netflix: { name: 'Netflix', desc: 'Unlimited ad-free<br>OTT on 1 device', w: 103, logo: 'logo-netflix.png', lr: '', tag: 'Expiring in 14:07 hrs', tone: 'error', cat: 'Entertainment' },
-  zee5:    { name: 'Zee5', desc: 'Access to popular live television channels', w: 126, logo: 'logo-zee5.png', lr: 'r4', tag: 'Expiring in 33:50 hrs', tone: 'warning', cat: 'Entertainment' },
+  netflix: { name: 'Netflix', desc: 'Unlimited ad-free<br>OTT on 1 device', w: 103, logo: 'logo-netflix.png', lr: '', timer: 14 * 3600 + 7 * 60, tone: 'error', cat: 'Entertainment' },
+  zee5:    { name: 'Zee5', desc: 'Access to popular live television channels', w: 126, logo: 'logo-zee5.png', lr: 'r4', timer: 33 * 3600 + 50 * 60, tone: 'warning', cat: 'Entertainment' },
   prime:   { name: 'Prime Video', desc: 'Access to HD-quality OTT on 1 device', w: 142, logo: 'logo-prime.png', lr: 'r8', tag: 'Expiring in 1 week', tone: '', cat: 'Entertainment' },
   apollo:  { name: 'Apollo Circle', desc: 'Complimentaary<br>6-month membership', w: 135, logo: 'logo-apollo.png', lr: 'r8', tag: 'Expiring in 1 month', tone: '', cat: 'Medicine' },
 };
@@ -56,7 +56,7 @@ function card([b, p, av]) {
   return `<div class="bcard" data-key="${key}">
     <div class="bc-top">
       <div class="bc-main"><img class="bc-logo ${B.lr}" src="${A}${B.logo}" alt=""><div class="bc-txt"><p class="bc-name">${B.name}</p><p class="bc-desc" style="width:${B.w}px">${B.desc}</p></div></div>
-      <span class="tag ${B.tone}">${B.tag}</span>
+      ${tagHtml(b)}
     </div>
     <div class="bc-line"></div>
     <div class="bc-foot">
@@ -65,6 +65,27 @@ function card([b, p, av]) {
     </div>
   </div>`;
 }
+// fake countdown: every copy of a tag reads the same clock, so home / sheet / detail stay in sync
+const T0 = Date.now();
+const left = b => Math.max(0, BENEFITS[b].timer - Math.floor((Date.now() - T0) / 1000));
+const hms = n => [Math.floor(n / 3600), Math.floor(n / 60) % 60, n % 60].map(v => String(v).padStart(2, '0')).join(':');
+const digits = str => [...str].map(c => `<span class="d">${c}</span>`).join('');
+function tagHtml(b) {
+  const B = BENEFITS[b];
+  if (!B.timer) return `<span class="tag ${B.tone}">${B.tag}</span>`;
+  return `<span class="tag ${B.tone}" data-timer="${b}">Expiring in<span class="tm">${digits(hms(left(b)))}</span></span>`;
+}
+setInterval(() => {
+  document.querySelectorAll('[data-timer]').forEach(tag => {
+    const next = hms(left(tag.dataset.timer)), ds = tag.querySelectorAll('.tm .d');
+    [...next].forEach((c, i) => {
+      if (ds[i].textContent === c) return;
+      const n = document.createElement('span'); n.className = 'd roll'; n.textContent = c; ds[i].replaceWith(n);
+    });
+    if (next.endsWith(':00')) { tag.classList.remove('tick'); void tag.offsetWidth; tag.classList.add('tick'); }
+  });
+}, 1000);
+
 const remindBtn = (key, done) => done
   ? `<button class="remind sent" disabled data-remind="${key}">Send Reminder<img class="ic-tick" src="${A}tick-grey.svg" alt=""></button>`
   : `<button class="tap remind" data-remind="${key}">Send Reminder<img src="${A}bell.svg" alt=""></button>`;

@@ -94,8 +94,10 @@ p { overflow-wrap: break-word; }
 .hscroll::after { content: ''; flex: none; width: 4px; }
 
 .status-row { gap: 12px; }
-.scard { width: 304px; height: 226px; padding: 15px; border: 1px solid var(--card-b); border-radius: 16px; background: var(--card); display: flex; flex-direction: column; align-items: center; gap: 20px; }
-.scard-ill { height: 72px; display: grid; place-items: center; }
+.scard { width: 304px; padding: 15px; border: 1px solid var(--card-b); border-radius: 16px; background: var(--card); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+/* the 120px bitmap overflowed its 72px slot onto the title; give it its own room, anchored to the top */
+.scard-ill { height: 96px; display: flex; justify-content: center; align-items: flex-start; }
+.ill { margin-top: -10px; }
 .ill { position: relative; width: 120px; height: 120px; }
 .ill-live { position: absolute; inset: 4.17%; overflow: hidden; }
 .ill-a { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -290,3 +292,11 @@ p { overflow-wrap: break-word; }
 .shot .device { border-radius: 0; box-shadow: none; transform: none; }
 .shot * { animation-duration: 0s !important; transition-duration: 0s !important; }
 .sec-title.h16 { min-height: 16px; height: 16px; }
+
+/* live expiry countdown: digits roll in as they change */
+.tm { display: inline-flex; font-variant-numeric: tabular-nums; margin-left: 3px; }
+.tm .d { display: inline-block; }
+.tm .d.roll { animation: roll .35s cubic-bezier(.2,.8,.2,1); }
+@keyframes roll { from { transform: translateY(-70%); opacity: 0; } to { transform: none; opacity: 1; } }
+.tag[data-timer].tick { animation: tagPulse .6s ease; }
+@keyframes tagPulse { 50% { filter: brightness(1.04) saturate(1.15); } }
