@@ -243,48 +243,79 @@ function playReveal() {
 }
 function finishReveal() { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 1900); }
 
-// ---------- V2 popup: benefit flies along an arc and docks on the member (~2 s) ----------
+// ---------- V2 popup: benefit flies along an arc and docks on the member ----------
+// One rAF clock drives every element from a single time value, so speeds never jump between segments.
+// The same tile flies, lands and stays as the badge (no element swap).
+const FLY = { T: 2200, START: [56, 84], C1: [108, 6], C2: [206, 2], AV: [258, 70], CENTER: [155.5, 70], BADGE: [19, -19], DOTS: 36 };
+const clamp = v => v < 0 ? 0 : v > 1 ? 1 : v;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;          // cubic
+const easeInOutSine = x => -(Math.cos(Math.PI * x) - 1) / 2;
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const easeOutBack = x => { const c = 1.45; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const bez = (p, P0, P1, P2, P3) => { const u = 1 - p; return u*u*u*P0 + 3*u*u*p*P1 + 3*u*p*p*P2 + p*p*p*P3; };
+const arc = p => { const E = [FLY.AV[0] + FLY.BADGE[0], FLY.AV[1] + FLY.BADGE[1]];
+  return [bez(p, FLY.START[0], FLY.C1[0], FLY.C2[0], E[0]), bez(p, FLY.START[1], FLY.C1[1], FLY.C2[1], E[1])]; };
+const place = (el, x, y, w, s = 1, r = 0, o = 1) => { el.style.transform = `translate3d(${x - w / 2}px, ${y - w / 2}px, 0) rotate(${r}deg) scale(${s})`; el.style.opacity = o; };
+
+let flyRaf = 0, flySparked = false;
+function flyRender(ms) {
+  const q = sel => modal.querySelector(sel);
+  const logo = q('.fly-logo'), av = q('.fly-av'), halo = q('.fly-halo'), dots = q('.fly-dots').children;
+  const t = ms;
+  // timings (ms)
+  const appear = seg(t, 0, 420), avIn = seg(t, 100, 520), flight = seg(t, 320, 1340), land = seg(t, 1290, 1660), centre = seg(t, 1500, 2080), trailOut = seg(t, 1320, 1860);
+  const f = easeInOutSine(flight), c = easeInOut(centre);
+  // member: fades in, takes a soft hit on landing, glides to centre and grows
+  const hit = Math.sin(Math.PI * land) * (1 - land) * .16;
+  const avS = lerp(1, 1.38, c) * (1 - hit);
+  const ax = lerp(FLY.AV[0], FLY.CENTER[0], c), ay = FLY.AV[1];
+  place(av, ax, ay, 52, lerp(.6, 1, easeOutBack(avIn)) * avS, 0, easeOut(avIn));
+  // tile: pops in tilted, flies the arc while turning and shrinking, then rides on the member as a badge
+  let lx, ly, ls, lr;
+  if (flight < 1) {
+    [lx, ly] = arc(f);
+    ls = lerp(1, .35, Math.pow(f, 1.6)) * lerp(.55, 1, easeOutBack(appear));
+    lr = lerp(-14, 0, f) + Math.sin(Math.PI * f) * 22;
+  } else {
+    lx = ax + FLY.BADGE[0] * avS; ly = ay + FLY.BADGE[1] * avS;
+    ls = .35 * avS * (1 + Math.sin(Math.PI * land) * .22);
+    lr = 0;
+  }
+  place(logo, lx, ly, 52, ls, lr, easeOut(appear));
+  logo.style.boxShadow = flight < 1 ? `0 ${6 * ls}px ${16 * ls}px rgba(0,0,0,${.22 * ls + .05})` : '0 0 0 3.5px #fff, 0 3px 10px rgba(0,0,0,.25)';
+  logo.style.borderRadius = flight < 1 ? '13px' : '14px';
+  // trail: soft dots light up just behind the tile, then fade together
+  for (let i = 0; i < dots.length; i++) {
+    const u = (i + .5) / dots.length, [dx, dy] = arc(u * .94);
+    const lit = easeOut(clamp((f - u + .1) / .22));
+    place(dots[i], dx, dy, 32, lerp(.55, 1, lit), 0, lit * (1 - easeInOut(trailOut)) * .7);
+  }
+  // halo breathes in once the member is centred
+  const h = easeOut(seg(t, 1820, 2200));
+  place(halo, ax, ay, 76, lerp(.7, 1.42, h), 0, h);
+  return { landed: land > 0, ax, ay };
+}
+
 function playFly() {
   running.forEach(a => a.cancel()); running = [];
-  const q = sel => modal.querySelector(sel);
-  const logo = q('.fly-logo'), me = q('.fly-me'), av = q('.fly-av'), badge = q('.fly-badge'), trail = q('.fly-trail'), path = q('#flyPath'), halo = q('.fly-halo'), ok = q('.okbtn');
-  ok.disabled = true; ok.classList.remove('shine');
-  const L = path.getTotalLength();
-  path.style.strokeDasharray = L; path.style.strokeDashoffset = L;
-  const T = reduce ? 1 : 2100, base = { duration: T, delay: reduce ? 0 : 140, fill: 'both' };
-  const glide = 'cubic-bezier(.45,0,.2,1)', spring = 'cubic-bezier(.3,1.6,.5,1)', ease = 'cubic-bezier(.22,1,.36,1)';
-  running.push(
-    // 1 pop in at the start of the arc, 2 glide along it (turning + shrinking), 3 dock as the badge
-    logo.animate([
-      { offset: 0,   offsetDistance: '0%', transform: 'rotate(-14deg) scale(.55)', opacity: 0, easing: spring },
-      { offset: .14, offsetDistance: '0%', transform: 'rotate(-14deg) scale(1)', opacity: 1, easing: 'linear' },
-      { offset: .2,  offsetDistance: '0%', transform: 'rotate(-14deg) scale(1)', easing: glide },
-      { offset: .4,  offsetDistance: '42%', transform: 'rotate(4deg) scale(.96)', easing: glide },
-      { offset: .56, offsetDistance: '100%', transform: 'rotate(18deg) scale(.35)', opacity: 1 },
-      { offset: .57, offsetDistance: '100%', transform: 'rotate(18deg) scale(.35)', opacity: 0 },
-      { offset: 1,   offsetDistance: '100%', transform: 'rotate(18deg) scale(.35)', opacity: 0 },
-    ], base),
-    trail.animate([{ offset: 0, opacity: 0 }, { offset: .12, opacity: .9 }, { offset: .6, opacity: .9 }, { offset: .8, opacity: 0 }, { offset: 1, opacity: 0 }], base),
-    path.animate([{ offset: 0, strokeDashoffset: L }, { offset: .14, strokeDashoffset: L * .55, easing: glide }, { offset: .5, strokeDashoffset: 0 }, { offset: 1, strokeDashoffset: 0 }], base),
-    av.animate([
-      { offset: 0, transform: 'scale(.6)', opacity: 0, easing: spring }, { offset: .16, transform: 'scale(1)', opacity: 1 },
-      { offset: .56, transform: 'scale(1)', easing: 'ease-out' }, { offset: .6, transform: 'scale(.9)', easing: spring }, { offset: .68, transform: 'scale(1)' }, { offset: 1, transform: 'scale(1)', opacity: 1 },
-    ], base),
-    badge.animate([
-      { offset: 0, opacity: 0, transform: 'rotate(18deg) scale(1)' }, { offset: .565, opacity: 0, transform: 'rotate(18deg) scale(1)' },
-      { offset: .57, opacity: 1, transform: 'rotate(18deg) scale(1)', easing: spring }, { offset: .66, opacity: 1, transform: 'rotate(0deg) scale(1.15)', easing: ease },
-      { offset: .72, transform: 'rotate(0deg) scale(1)' }, { offset: 1, opacity: 1, transform: 'rotate(0deg) scale(1)' },
-    ], base),
-    // 4 member glides to centre, grows, green halo breathes in
-    me.animate([
-      { offset: 0, transform: 'translate(0,0) scale(1)' }, { offset: .68, transform: 'translate(0,0) scale(1)', easing: 'cubic-bezier(.65,0,.25,1)' },
-      { offset: .9, transform: 'translate(-102.5px,0) scale(1.38)', easing: ease }, { offset: 1, transform: 'translate(-102.5px,0) scale(1.38)' },
-    ], base),
-    halo.animate([{ offset: 0, opacity: 0, transform: 'scale(.6)' }, { offset: .8, opacity: 0, transform: 'scale(.6)', easing: ease }, { offset: .95, opacity: 1, transform: 'scale(1.5)' }, { offset: 1, opacity: 1, transform: 'scale(1.45)' }], base),
-  );
-  if (reduce) { ok.disabled = false; return; }
-  setTimeout(() => { if (modal.classList.contains('open')) { navigator.vibrate?.(10); burst(me, 'soft'); } }, 140 + T * .57);
-  setTimeout(() => { if (!modal.classList.contains('open')) return; ok.disabled = false; ok.classList.add('shine'); }, 140 + T * .9);
+  cancelAnimationFrame(flyRaf); flySparked = false;
+  const dotsEl = modal.querySelector('.fly-dots');
+  if (dotsEl.children.length !== FLY.DOTS) dotsEl.innerHTML = '<i></i>'.repeat(FLY.DOTS);
+  const ok = modal.querySelector('.okbtn'); ok.disabled = true; ok.classList.remove('shine');
+  if (reduce) { flyRender(FLY.T); ok.disabled = false; return; }
+  flyRender(0);
+  const t0 = performance.now() + 160;                 // let the card start opening first
+  running.push({ cancel: () => cancelAnimationFrame(flyRaf), pause() { this.cancel(); }, set currentTime(v) { flyRender(v); } });
+  const tick = now => {
+    const t = now - t0;
+    const st = flyRender(Math.max(0, t));
+    if (st.landed && !flySparked) { flySparked = true; navigator.vibrate?.(10); burst(modal.querySelector('.fly-logo'), 'soft'); }
+    if (t >= 2080 && ok.disabled) { ok.disabled = false; ok.classList.add('shine'); }
+    if (t < FLY.T + 50 && modal.classList.contains('open')) flyRaf = requestAnimationFrame(tick);
+  };
+  flyRaf = requestAnimationFrame(tick);
 }
 
 // ---------- confetti (canvas inside the 375 x 812 frame) ----------
@@ -304,7 +335,7 @@ function burst(fromEl, mode) {
       life: 0, max: 95 + Math.random() * 55, tilt: Math.random() * 6.28 });
   } };
   if (mode === 'soft') {                                      // V2: a light sparkle off the docking point
-    const n0 = parts.length; add(34, ox + 14, oy - 14, Math.PI * 2, 0, 5.5);
+    const n0 = parts.length; add(30, ox, oy, Math.PI * 2, 0, 5);
     for (let i = n0; i < parts.length; i++) { const p = parts[i]; p.c = SOFT[i % SOFT.length]; p.g *= .45; p.w *= .7; p.h *= .7; p.max *= .7; }
   } else {
     add(70, ox, oy, Math.PI * 1.25, -Math.PI / 2, 11);        // main burst from the member
