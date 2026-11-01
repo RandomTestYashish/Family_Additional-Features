@@ -57,7 +57,8 @@ p { overflow-wrap: break-word; }
 .home-page { padding-bottom: 120px; }
 .home-page { background: linear-gradient(to top, #f7f9ff, #f5fbfb) 0 0 / 100% 812px no-repeat; }
 .hero { position: relative; height: 460px; }
-.hero > .statusbar { position: absolute; left: 0; top: 0; }
+.sb-pin { position: absolute; left: 0; top: 0; z-index: 4; transition: background-color .25s ease, box-shadow .25s ease, backdrop-filter .25s ease; }
+.sb-pin.solid { background-color: rgba(247,250,252,.82); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); box-shadow: 0 1px 0 rgba(0,0,0,.05); }
 .topnav-menu { position: absolute; left: 24px; top: 56px; width: 32px; height: 32px; display: grid; place-items: center; }
 .topnav-menu img { width: 17.2px; height: 11.42px; }
 .topnav-more { position: absolute; left: 315px; top: 56px; width: 40px; height: 40px; display: grid; place-items: center; }
@@ -313,3 +314,6 @@ p { overflow-wrap: break-word; }
 @keyframes roll { from { transform: translateY(-70%); opacity: 0; } to { transform: none; opacity: 1; } }
 .tag[data-timer].tick { animation: tagPulse .6s ease; }
 @keyframes tagPulse { 50% { filter: brightness(1.04) saturate(1.15); } }
+
+/* popup -> card hand-off */
+.bcard.landed { position: relative; z-index: 1; }

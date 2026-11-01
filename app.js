@@ -125,17 +125,49 @@ function sendReminder(key) {
   playReveal();
 }
 
+// Close: the popup shrinks onto the card that sent the reminder and dissolves into it,
+// then that card glows and its button ticks over to "sent".
 function closeModal() {
-  if (!modal.classList.contains('open')) return;
+  if (!modal.classList.contains('open') || modal.classList.contains('closing')) return;
   clearTimeout(autoClose);
   modal.classList.add('closing');
+  const key = pendingKey; pendingKey = null;
+  const scope = sheet.classList.contains('open') ? sheet : screens[current];
+  const card = key && scope.querySelector(`[data-remind="${key}"]`)?.closest('.bcard');
+  const box = modal.querySelector('.modal'), scrim = modal.querySelector('.scrim');
+  const flip = () => { if (key) document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); }); };
+  const finish = () => { close(modal); modal.classList.remove('closing'); box.style.transition = ''; box.getAnimations().forEach(a => a.cancel()); scrim.getAnimations().forEach(a => a.cancel()); [...box.children].forEach(c => c.getAnimations().forEach(a => a.cancel())); };
+
+  const d = device.getBoundingClientRect(), k = device.offsetWidth / d.width;
+  const m = box.getBoundingClientRect(), c = card?.getBoundingClientRect();
+  const visible = c && c.bottom > d.top + 40 && c.top < d.bottom - 40;
+  if (reduce || !visible) {                       // nothing on screen to land on: simple fade
+    box.style.transition = 'none';
+    box.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-50%) scale(.96)' }], { duration: 220, fill: 'forwards' });
+    scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: 'forwards' }).finished.then(() => { finish(); flip(); });
+    return;
+  }
+  const dy = ((c.top + c.height / 2) - (m.top + m.height / 2)) * k, sx = c.width / m.width, sy = c.height / m.height;
+  const D = 520, out = 'cubic-bezier(.4,0,.2,1)';
+  box.style.transition = 'none';
+  [...box.children].forEach(el => el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.92)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' }));
+  box.animate([
+    { transform: 'translateY(-50%)', borderRadius: '20px', opacity: 1, boxShadow: '0 24px 60px rgba(0,0,0,.18)' },
+    { offset: .7, opacity: 1 },
+    { transform: `translateY(calc(-50% + ${dy}px)) scale(${sx}, ${sy})`, borderRadius: `${12 / sx}px / ${12 / sy}px`, opacity: 0, boxShadow: '0 4px 12px rgba(0,0,0,.04)' },
+  ], { duration: D, easing: out, fill: 'forwards' });
+  scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: D * .9, easing: 'ease-out', fill: 'forwards' });
+  if (window.__hold) return;
   setTimeout(() => {
-    close(modal); modal.classList.remove('closing');
-    if (pendingKey) {
-      const key = pendingKey; pendingKey = null;
-      document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); });
-    }
-  }, 220);
+    flip();
+    card.classList.add('landed');
+    card.animate([
+      { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(7,94,232,0)' },
+      { offset: .35, transform: 'scale(1.025)', boxShadow: '0 0 0 3px rgba(7,94,232,.22), 0 10px 24px rgba(7,94,232,.12)' },
+      { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(7,94,232,0)' },
+    ], { duration: 650, easing: 'cubic-bezier(.2,.8,.2,1)' }).finished.then(() => card.classList.remove('landed'));
+  }, D * .72);
+  setTimeout(finish, D + 20);
 }
 
 // ---------- popup reveal (Web Animations, one 1.7 s timeline) ----------
@@ -187,7 +219,7 @@ function playReveal() {
   }, 160 + T * .84);
   return done;
 }
-function finishReveal() { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 2400); }
+function finishReveal() { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 1900); }
 
 // ---------- confetti (canvas inside the 375 x 812 frame) ----------
 const cvs = document.getElementById('confetti'), ctx = cvs.getContext('2d');
@@ -222,6 +254,10 @@ function burst(fromEl) {
     raf = parts.length ? requestAnimationFrame(step) : (ctx.clearRect(0, 0, W, H), 0);
   }); }
 }
+
+// ---------- pinned status bar frosts once content scrolls under it ----------
+const sbPin = document.querySelector('.sb-pin');
+document.querySelector('#home .scroll').addEventListener('scroll', e => sbPin.classList.toggle('solid', e.target.scrollTop > 8), { passive: true });
 
 // ---------- navigation ----------
 const screens = { home: document.getElementById('home'), detail: document.getElementById('detail') };
@@ -277,7 +313,13 @@ device.addEventListener('touchstart', e => { const t = e.target.closest('.tap');
   if (shot === 'sheet' || shot === 'ent') { chip = shot === 'ent' ? 'Entertainment' : null; renderSheet(); open(sheet); }
   if (shot === 'modal') { sendReminder('netflix:shree');
     const ft = new URLSearchParams(location.search).get('t');
-    if (ft !== null) { clearTimeout(autoClose); running.forEach(an => { an.pause(); an.currentTime = +ft; }); } }
+    if (ft !== null) { clearTimeout(autoClose); running.forEach(an => { an.pause(); an.currentTime = +ft; }); }
+    const cl = new URLSearchParams(location.search).get('close');
+    if (cl !== null) addEventListener('load', () => setTimeout(() => { window.__hold = true; closeModal();
+      const box = modal.querySelector('.modal'), els = [box, modal.querySelector('.scrim'), ...box.children];
+      els.forEach(el => el.getAnimations().filter(an => !running.includes(an)).forEach(an => { an.pause(); an.currentTime = +cl; }));
+      if (+cl > 374) { document.querySelectorAll('[data-remind="netflix:shree"]').forEach(b => { b.outerHTML = remindBtn('netflix:shree', true); }); }
+    }, 50)); }
   const full = false, y = +new URLSearchParams(location.search).get('y') || 0;
   addEventListener('load', () => { screens[current].querySelector('.scroll').scrollTop = y; });
   const set = () => {
