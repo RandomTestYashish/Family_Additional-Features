@@ -33,6 +33,7 @@ document.getElementById('relations').innerHTML =
   rel(211.99, 328.78, 'O', 'Others');
 
 // ---------- benefits ----------
+const BRAND = { netflix: '#E50914', zee5: '#8230C6', prime: '#1A98FF', apollo: '#F15A24' };
 const BENEFITS = {
   netflix: { name: 'Netflix', desc: 'Unlimited ad-free<br>OTT on 1 device', w: 103, logo: 'logo-netflix.png', lr: '', timer: 14 * 3600 + 7 * 60, tone: 'error', cat: 'Entertainment' },
   zee5:    { name: 'Zee5', desc: 'Access to popular live television channels', w: 126, logo: 'logo-zee5.png', lr: 'r4', timer: 33 * 3600 + 50 * 60, tone: 'warning', cat: 'Entertainment' },
@@ -144,6 +145,7 @@ function sendReminder(key) {
   modal.classList.remove('closing');
   modal.querySelector('.v4-av').src = av.src;
   modal.querySelectorAll('.v4-badge, .v4stage .env-logo').forEach(i => { i.src = logo.src; });
+  modal.querySelector('.v4stage .env').style.setProperty('--brand', BRAND[b] || '#E50914');
   modal.classList.toggle('v2', VER === 2);
   modal.classList.toggle('v4', VER === 4);
   open(modal);
@@ -324,7 +326,7 @@ function playFly() {
 // ---------- envelope (V3 + V4): one rAF clock drives every part ----------
 const ENV = { W: 150, H: 104 };
 const ENV_HTML = `<span class="env-shadow"></span>
-  <svg class="env-back" viewBox="0 0 104 72"><rect x=".5" y=".5" width="103" height="71" rx="11" /></svg>
+  <svg class="env-back" viewBox="0 0 104 72"><rect x=".5" y=".5" width="103" height="71" rx="11" /><path class="env-liner" d="M7 3.5 H97 L52 38 Z" /></svg>
   <img class="env-logo" src="${A}logo-netflix.png" alt="">
   <svg class="env-front" viewBox="0 0 104 72"><defs><linearGradient id="envG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#f3f6fa"/></linearGradient></defs>
     <path d="M.5 24 L52 52 L103.5 24 V60.5 a11 11 0 0 1 -11 11 H11.5 a11 11 0 0 1 -11 -11 Z" fill="url(#envG)" /></svg>
@@ -357,6 +359,7 @@ function envRender(t, g) {
   const ang = lerp(180, 0, smooth(seg(t, 1040, 1380)));
   flap.style.transform = `rotateX(${ang}deg)`;
   flap.style.zIndex = ang < 90 ? 4 : 1;
+  flap.classList.toggle('inside', ang > 90);
   logo.style.opacity = smooth(pop) * (1 - smooth(seg(t, 1060, 1180)));
   // green seal stamps on
   const st = seg(t, 1330, 1560);
@@ -373,6 +376,7 @@ function playEnvelope(key) {
   const avEl = card?.querySelector('.av36');
   const d = device.getBoundingClientRect(), k = device.offsetWidth / d.width, H = device.offsetHeight;
   v3.querySelector('.env-logo').src = A + BENEFITS[key.split(':')[0]].logo;
+  v3.querySelector('.env').style.setProperty('--brand', BRAND[key.split(':')[0]] || '#E50914');
   const r = avEl?.getBoundingClientRect();
   const onScreen = r && r.top > d.top + 40 && r.bottom < d.bottom - 40;
   const tx = onScreen ? (r.left + r.width / 2 - d.left) * k : 187.5, ty = onScreen ? (r.top + r.height / 2 - d.top) * k : H - 140;
@@ -418,7 +422,7 @@ const v4Arc = (u, g) => { const x = lerp(g.cx, g.tx, u); const y = (1 - u) * (1 
 function v4Render(t, g) {
   envRender(t, g);
   const q = sel => g.root.querySelector(sel);
-  const me = q('.v4-me'), badge = q('.v4-badge'), halo = q('.v4-halo'), dots = q('.fly-dots').children;
+  const me = q('.v4-me'), badge = q('.v4-badge'), halo = q('.v4-halo'), waits = g.root.querySelectorAll('.v4-wait'), burstRing = q('.v4-burst');
   const [fa, fb] = V4.FLIGHT;
   const avIn = seg(t, 120, 560), land = seg(t, fb - 60, fb + 300), centre = seg(t, fb + 220, fb + 820);
   const c = smooth(centre), hit = Math.sin(Math.PI * land) * (1 - land) * .16;
@@ -427,13 +431,13 @@ function v4Render(t, g) {
   me.style.transform = `translate3d(${ax - 26}px, ${ay - 26}px, 0) scale(${s})`; me.style.opacity = smooth(avIn);
   const b = seg(t, fb - 40, fb + 300);
   badge.style.transform = `scale(${easeOutBack(b)}) rotate(${lerp(-24, 0, smooth(b))}deg)`; badge.style.opacity = smooth(b);
-  // soft green trail lights up just behind the envelope, then fades
-  const fl = seg(t, fa, fb), f = g.f || 0, out = smooth(seg(t, fb - 80, fb + 400));
-  for (let i = 0; i < dots.length; i++) {
-    const u = (i + .5) / dots.length, [dx, dy] = v4Arc(u * .9, g);
-    const lit = fl > 0 ? easeOut(clamp((f - u + .1) / .22)) : 0;
-    dots[i].style.transform = `translate3d(${dx - 16}px, ${dy - 16}px, 0) scale(${lerp(.55, 1, lit)})`; dots[i].style.opacity = lit * (1 - out) * .7;
-  }
+  // the member 'waits' with soft ripples until the envelope lands
+  const waitOn = smooth(seg(t, 300, 700)) * (1 - smooth(seg(t, fb - 200, fb + 40)));
+  waits.forEach((w, i) => { const ph = ((t / 1250) + i * .5) % 1;
+    w.style.transform = `translate3d(${ax - 26}px, ${ay - 26}px, 0) scale(${lerp(1, 1.75, easeOut(ph))})`; w.style.opacity = (1 - ph) * .55 * waitOn; });
+  // landing: a crisp ring bursts out of the member
+  const br = seg(t, fb - 20, fb + 520);
+  burstRing.style.transform = `translate3d(${ax - 26}px, ${ay - 26}px, 0) scale(${lerp(1, 2.1, easeOut(br))})`; burstRing.style.opacity = br > 0 ? (1 - smooth(br)) : 0;
   const h = easeOut(seg(t, fb + 560, fb + 960));
   halo.style.transform = `translate3d(${ax - 38}px, ${ay - 38}px, 0) scale(${lerp(.7, 1.42, h)})`; halo.style.opacity = h;
 }
@@ -441,8 +445,6 @@ function playV4() {
   running.forEach(a => a.cancel()); running = [];
   cancelAnimationFrame(v4Raf); clearTimeout(autoClose);
   const root = modal.querySelector('.v4stage');
-  const dotsEl = root.querySelector('.fly-dots');
-  if (dotsEl.children.length !== V4.DOTS) dotsEl.innerHTML = '<i></i>'.repeat(V4.DOTS);
   const g = { root, cx: V4.ENV[0], cy: V4.ENV[1], tx: V4.AV[0], ty: V4.AV[1], ky: V4.CTRL, base: .6, end: .14, flight: V4.FLIGHT, ease: easeInOutSine, late: true };
   v4Render(0, g);
   running.push({ cancel: () => cancelAnimationFrame(v4Raf), pause() { this.cancel(); }, set currentTime(v) { v4Render(v, g); } });
@@ -452,6 +454,10 @@ function playV4() {
   const tick = now => {
     const t = Math.max(0, now - t0);
     v4Render(t, g);
+    if (t > V4.FLIGHT[0] + 60 && t < V4.FLIGHT[1] - 60 && g.pos) {        // sparkle trail behind the envelope
+      const d = device.getBoundingClientRect(), k = device.offsetWidth / d.width, rr = root.getBoundingClientRect();
+      sparkAt((rr.left - d.left) * k + g.pos[0], (rr.top - d.top) * k + g.pos[1], 2, root.querySelector('.env').style.getPropertyValue('--brand'));
+    }
     if (t >= V4.FLIGHT[1] - 40 && !sparked) { sparked = true; navigator.vibrate?.(10); burst(root.querySelector('.v4-badge'), 'soft'); }
     if (t >= V4.FLIGHT[1] + 700 && !boomed) { boomed = true; burst(root.querySelector('.v4-me')); }
     if (t < END && modal.classList.contains('open')) v4Raf = requestAnimationFrame(tick);
@@ -484,6 +490,11 @@ function burst(fromEl, mode) {
     add(26, 24, oy + 40, Math.PI / 3, -Math.PI / 3, 12);      // side cannons
     add(26, W - 24, oy + 40, Math.PI / 3, -Math.PI * 2 / 3, 12);
   }
+  confettiLoop();
+}
+function confettiLoop() {
+  const dpr = Math.min(3, devicePixelRatio || 1), W = device.offsetWidth, H = device.offsetHeight;
+  if (cvs.width !== W * dpr) { cvs.width = W * dpr; cvs.height = H * dpr; }
   if (!raf) { let last = performance.now(); raf = requestAnimationFrame(function step(now) {
     const dt = Math.min(2.5, (now - last) / 16.67); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -498,6 +509,17 @@ function burst(fromEl, mode) {
     }
     raf = parts.length ? requestAnimationFrame(step) : (ctx.clearRect(0, 0, W, H), 0);
   }); }
+}
+
+// trail sparkle: a few tiny twinkles at a point (device coords)
+const TRAIL = ['#FFC145', '#FFD98A', '#4CC98C', '#9BE3BF'];
+function sparkAt(x, y, n, extra) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.28, v = .4 + Math.random() * 1.1;
+    parts.push({ x: x + (Math.random() - .5) * 10, y: y + (Math.random() - .5) * 8, vx: Math.cos(a) * v, vy: Math.sin(a) * v - .2, g: .03, rot: Math.random() * 6.28, vr: (Math.random() - .5) * .2,
+      w: 2.5 + Math.random() * 3, h: 2.5 + Math.random() * 3, c: (Math.random() < .25 && extra) ? extra : TRAIL[(Math.random() * TRAIL.length) | 0], shape: Math.random() < .6 ? 'dot' : 'rect', life: 0, max: 26 + Math.random() * 22, tilt: 0 });
+  }
+  confettiLoop();
 }
 
 // ---------- pinned status bar frosts once content scrolls under it ----------
