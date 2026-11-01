@@ -50,7 +50,7 @@ p { overflow-wrap: break-word; }
 .sb-bat { left: 88.09%; top: 39.39%; width: 6.49%; height: 25.76%; }
 .sb-wifi { left: 82.67%; top: 39.39%; width: 4.09%; height: 25%; }
 .sb-cell { left: 76.8%; top: 40.15%; width: 4.53%; height: 24.24%; }
-.sb-time { left: 20px; top: 12px; width: 50px; height: 20px; }
+.sb-time { position: absolute; left: 20px; top: 12px; width: 50px; height: 20px; }
 .sb-time img { position: absolute; left: calc(50% - 10.79px); top: calc(50% - .46px); width: 28.426px; height: 11.089px; transform: translate(-50%, -50%); }
 
 /* ---------- landing hero (frame coords) ---------- */
