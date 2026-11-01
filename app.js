@@ -326,11 +326,12 @@ function playFly() {
 // ---------- envelope (V3 + V4): one rAF clock drives every part ----------
 const ENV = { W: 150, H: 104 };
 const ENV_HTML = `<span class="env-shadow"></span>
-  <svg class="env-back" viewBox="0 0 104 72"><rect x=".5" y=".5" width="103" height="71" rx="11" /><path class="env-liner" d="M7 3.5 H97 L52 38 Z" /></svg>
+  <svg class="env-back" viewBox="0 0 104 72"><rect x=".5" y=".5" width="103" height="71" rx="10" /></svg>
   <img class="env-logo" src="${A}logo-netflix.png" alt="">
-  <svg class="env-front" viewBox="0 0 104 72"><defs><linearGradient id="envG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#f3f6fa"/></linearGradient></defs>
-    <path d="M.5 24 L52 52 L103.5 24 V60.5 a11 11 0 0 1 -11 11 H11.5 a11 11 0 0 1 -11 -11 Z" fill="url(#envG)" /></svg>
-  <svg class="env-flap" viewBox="0 0 104 46"><path d="M.5 11 a10.5 10.5 0 0 1 10.5 -10.5 H93 a10.5 10.5 0 0 1 10.5 10.5 L56.4 42.2 a7 7 0 0 1 -8.8 0 Z" /></svg>
+  <svg class="env-front" viewBox="0 0 104 72"><defs><linearGradient id="envG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f2f5f9"/></linearGradient></defs>
+    <path class="ef-body" d="M.5 9.5 L49.6 44.6 a4 4 0 0 0 4.8 0 L103.5 9.5 V61.5 a10 10 0 0 1 -10 10 H10.5 a10 10 0 0 1 -10 -10 Z" fill="url(#envG)" />
+    <path class="ef-fold" d="M3.5 69 L44 41.5 M100.5 69 L60 41.5" /></svg>
+  <svg class="env-flap" viewBox="0 0 104 46"><path d="M.5 10 a9.5 9.5 0 0 1 9.5 -9.5 H94 a9.5 9.5 0 0 1 9.5 9.5 L55.2 43.4 a5.5 5.5 0 0 1 -6.4 0 Z" /></svg>
   <span class="env-seal"><svg viewBox="0 0 20 20"><path d="M5.5 10.4l3 3 6-6.4" /></svg></span>`;
 document.querySelectorAll('[data-env]').forEach(el => { el.innerHTML = ENV_HTML; });
 const smooth = x => x * x * x * (x * (x * 6 - 15) + 10);                // smootherstep: zero speed and acceleration at both ends
@@ -436,7 +437,7 @@ function v4Render(t, g) {
     w.style.transform = `translate3d(${ax - 26}px, ${ay - 26}px, 0) scale(${lerp(1, 1.75, easeOut(ph))})`; w.style.opacity = (1 - ph) * .55 * waitOn; });
   // landing: a crisp ring bursts out of the member
   const br = seg(t, fb - 20, fb + 520);
-  burstRing.style.transform = `translate3d(${ax - 26}px, ${ay - 26}px, 0) scale(${lerp(1, 2.1, easeOut(br))})`; burstRing.style.opacity = br > 0 ? (1 - smooth(br)) : 0;
+  burstRing.style.opacity = 0;
   const h = easeOut(seg(t, fb + 560, fb + 960));
   halo.style.transform = `translate3d(${ax - 38}px, ${ay - 38}px, 0) scale(${lerp(.7, 1.42, h)})`; halo.style.opacity = h;
 }
@@ -455,7 +456,7 @@ function playV4() {
     v4Render(t, g);
     if (t > V4.FLIGHT[0] + 60 && t < V4.FLIGHT[1] - 60 && g.pos) {        // sparkle trail behind the envelope
       const d = device.getBoundingClientRect(), k = device.offsetWidth / d.width, rr = root.getBoundingClientRect();
-      if ((flyTick = (flyTick + 1) % 3) === 0) sparkAt((rr.left - d.left) * k + g.pos[0], (rr.top - d.top) * k + g.pos[1], 1);
+      if ((flyTick = (flyTick + 1) % 5) === 0) sparkAt((rr.left - d.left) * k + g.pos[0], (rr.top - d.top) * k + g.pos[1], 1);
     }
     if (t >= V4.FLIGHT[1] - 40 && !sparked) { sparked = true; navigator.vibrate?.(10); burst(root.querySelector('.v4-badge'), 'soft'); }
     if (t >= V4.FLIGHT[1] + 700 && !boomed) { boomed = true; burst(root.querySelector('.v4-me'), 'light'); }
@@ -478,18 +479,16 @@ function burst(fromEl, mode) {
   const add = (n, x, y, spread, base, sp) => { for (let i = 0; i < n; i++) {
     const a = base + (Math.random() - .5) * spread, v = sp * (.55 + Math.random() * .7);
     parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: .22 + Math.random() * .12, rot: Math.random() * 6.28, vr: (Math.random() - .5) * .35,
-      w: 5 + Math.random() * 5, h: 8 + Math.random() * 7, c: COLORS[i % COLORS.length], shape: Math.random() < .28 ? 'dot' : Math.random() < .5 ? 'rect' : 'ribbon',
-      life: 0, max: 95 + Math.random() * 55, tilt: Math.random() * 6.28 });
+      w: 4 + Math.random() * 3.5, h: 6 + Math.random() * 5, c: COLORS[i % COLORS.length], shape: Math.random() < .28 ? 'dot' : Math.random() < .5 ? 'rect' : 'ribbon',
+      life: 0, max: 70 + Math.random() * 35, tilt: Math.random() * 6.28 });
   } };
   if (mode === 'light') {                                     // V4: a small, tidy burst from the member only
-    add(28, ox, oy, Math.PI * 1.1, -Math.PI / 2, 8.5);
+    add(12, ox, oy, Math.PI * .9, -Math.PI / 2, 6.5);
   } else if (mode === 'soft') {                                      // V2: a light sparkle off the docking point
-    const n0 = parts.length; add(30, ox, oy, Math.PI * 2, 0, 5);
+    const n0 = parts.length; add(12, ox, oy, Math.PI * 2, 0, 4.2);
     for (let i = n0; i < parts.length; i++) { const p = parts[i]; p.c = SOFT[i % SOFT.length]; p.g *= .45; p.w *= .7; p.h *= .7; p.max *= .7; }
   } else {
-    add(70, ox, oy, Math.PI * 1.25, -Math.PI / 2, 11);        // main burst from the member
-    add(26, 24, oy + 40, Math.PI / 3, -Math.PI / 3, 12);      // side cannons
-    add(26, W - 24, oy + 40, Math.PI / 3, -Math.PI * 2 / 3, 12);
+    add(18, ox, oy, Math.PI * 1.0, -Math.PI / 2, 7.5);        // V1: one small burst from the member
   }
   confettiLoop();
 }
