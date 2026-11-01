@@ -337,16 +337,18 @@ const smooth = x => x * x * x * (x * (x * 6 - 15) + 10);                // smoot
 function envRender(t, g) {
   const q = sel => g.root.querySelector(sel);
   const env = q('.env'), logo = q('.env-logo'), flap = q('.env-flap'), seal = q('.env-seal'), shadow = q('.env-shadow');
-  if (g.scrim) g.scrim.style.opacity = smooth(seg(t, 0, 320)) * (1 - smooth(seg(t, 1620, 2160)));
+  const [fa, fb] = g.flight || [1560, 2240];
+  if (g.scrim) g.scrim.style.opacity = smooth(seg(t, 0, 320)) * (1 - smooth(seg(t, fa + 60, fb - 80)));
   // rise in -> hold -> one smooth arc to the target (scale + gentle roll), fading only at the very end
-  const rise = seg(t, 0, 520), flight = seg(t, 1560, 2240), f = smooth(flight);
+  const rise = seg(t, 0, 520), flight = seg(t, fa, fb), f = g.ease ? g.ease(flight) : smooth(flight);
   const bx = lerp(g.cx, g.tx, f), by = (1 - f) * (1 - f) * g.cy + 2 * (1 - f) * f * g.ky + f * f * g.ty;
-  const sc = g.base * lerp(.8, 1, easeOutBack(rise)) * lerp(1, g.end, smooth(Math.min(1, flight * 1.1)));
-  const lift = (1 - smooth(rise)) * 40 + Math.sin(Math.PI * seg(t, 1380, 1620)) * -6;   // small lift just before take-off
+  const sc = g.base * lerp(.8, 1, easeOutBack(rise)) * lerp(1, g.end, smooth(g.late ? Math.pow(flight, 1.8) : Math.min(1, flight * 1.1)));
+  const lift = (1 - smooth(rise)) * 40 + Math.sin(Math.PI * seg(t, fa - 180, fa + 60)) * -6;   // small lift just before take-off
   const rot = Math.sin(Math.PI * f) * -12;
   env.style.transform = `translate3d(${bx - ENV.W / 2}px, ${by - ENV.H / 2 + lift}px, 0) rotate(${rot}deg) scale(${sc})`;
-  env.style.opacity = smooth(rise) * (1 - smooth(seg(t, 2080, 2240)));
-  shadow.style.opacity = 1 - smooth(seg(t, 1560, 1800));
+  env.style.opacity = smooth(rise) * (1 - smooth(seg(t, fb - 160, fb)));
+  shadow.style.opacity = 1 - smooth(seg(t, fa, fa + 240));
+  g.pos = [bx, by]; g.f = f;
   // logo pops above the open envelope, then drops in behind the pocket
   const pop = seg(t, 180, 600), drop = seg(t, 660, 1060), d = smooth(drop);
   const ly = lerp(-58, 50, d), ls = easeOutBack(pop) * lerp(1, .8, d), lr = lerp(-10, 0, smooth(pop)) + Math.sin(Math.PI * d) * 5;
@@ -408,33 +410,52 @@ function playEnvelope(key) {
   window.__envDeliver = ms => { cancelAnimationFrame(envRaf); envRender(2300, g); deliver(); document.getAnimations().forEach(an => { an.pause(); an.currentTime = ms; }); };
 }
 
-// V4: the same envelope inside the popup; it seals, flies off, and the member appears with the badge (V1 ending)
+// V4: V3's envelope inside the V1 popup. The member waits on the right; the sealed envelope flies a soft arc
+// onto them (like V2), the badge snaps on, the member glides to centre with a halo + confetti, then it dissolves into the card.
+const V4 = { ENV: [96, 86], AV: [258, 76], CENTER: [155.5, 76], CTRL: -6, FLIGHT: [1600, 2440], DOTS: 30 };
 let v4Raf = 0;
+const v4Arc = (u, g) => { const x = lerp(g.cx, g.tx, u); const y = (1 - u) * (1 - u) * g.cy + 2 * (1 - u) * u * g.ky + u * u * g.ty; return [x, y]; };
 function v4Render(t, g) {
   envRender(t, g);
   const q = sel => g.root.querySelector(sel);
-  const me = q('.v4-me'), badge = q('.v4-badge'), ring = q('.v4-ring');
-  const a = seg(t, 1880, 2320), b = seg(t, 2140, 2440), rg = seg(t, 2240, 2900);
-  const cx = 155.5, cy = 78;
-  me.style.transform = `translate3d(${cx - 32}px, ${cy - 32}px, 0) scale(${lerp(.5, 1, easeOutBack(a))})`; me.style.opacity = smooth(a);
-  badge.style.transform = `scale(${easeOutBack(b)}) rotate(${lerp(-20, 0, smooth(b))}deg)`; badge.style.opacity = smooth(b);
-  ring.style.transform = `translate3d(${cx - 32}px, ${cy - 32}px, 0) scale(${lerp(1, 1.9, smooth(rg))})`; ring.style.opacity = rg > 0 ? (1 - smooth(rg)) : 0;
+  const me = q('.v4-me'), badge = q('.v4-badge'), halo = q('.v4-halo'), dots = q('.fly-dots').children;
+  const [fa, fb] = V4.FLIGHT;
+  const avIn = seg(t, 120, 560), land = seg(t, fb - 60, fb + 300), centre = seg(t, fb + 220, fb + 820);
+  const c = smooth(centre), hit = Math.sin(Math.PI * land) * (1 - land) * .16;
+  const s = lerp(1, 1.38, c) * (1 - hit) * lerp(.6, 1, easeOutBack(avIn));
+  const ax = lerp(V4.AV[0], V4.CENTER[0], c), ay = V4.AV[1];
+  me.style.transform = `translate3d(${ax - 26}px, ${ay - 26}px, 0) scale(${s})`; me.style.opacity = smooth(avIn);
+  const b = seg(t, fb - 40, fb + 300);
+  badge.style.transform = `scale(${easeOutBack(b)}) rotate(${lerp(-24, 0, smooth(b))}deg)`; badge.style.opacity = smooth(b);
+  // soft green trail lights up just behind the envelope, then fades
+  const fl = seg(t, fa, fb), f = g.f || 0, out = smooth(seg(t, fb - 80, fb + 400));
+  for (let i = 0; i < dots.length; i++) {
+    const u = (i + .5) / dots.length, [dx, dy] = v4Arc(u * .9, g);
+    const lit = fl > 0 ? easeOut(clamp((f - u + .1) / .22)) : 0;
+    dots[i].style.transform = `translate3d(${dx - 16}px, ${dy - 16}px, 0) scale(${lerp(.55, 1, lit)})`; dots[i].style.opacity = lit * (1 - out) * .7;
+  }
+  const h = easeOut(seg(t, fb + 560, fb + 960));
+  halo.style.transform = `translate3d(${ax - 38}px, ${ay - 38}px, 0) scale(${lerp(.7, 1.42, h)})`; halo.style.opacity = h;
 }
 function playV4() {
   running.forEach(a => a.cancel()); running = [];
   cancelAnimationFrame(v4Raf); clearTimeout(autoClose);
   const root = modal.querySelector('.v4stage');
-  const g = { root, cx: 155.5, cy: 84, tx: 360, ty: -70, ky: -10, base: .78, end: .42 };
+  const dotsEl = root.querySelector('.fly-dots');
+  if (dotsEl.children.length !== V4.DOTS) dotsEl.innerHTML = '<i></i>'.repeat(V4.DOTS);
+  const g = { root, cx: V4.ENV[0], cy: V4.ENV[1], tx: V4.AV[0], ty: V4.AV[1], ky: V4.CTRL, base: .6, end: .14, flight: V4.FLIGHT, ease: easeInOutSine, late: true };
   v4Render(0, g);
   running.push({ cancel: () => cancelAnimationFrame(v4Raf), pause() { this.cancel(); }, set currentTime(v) { v4Render(v, g); } });
-  if (reduce) { v4Render(3000, g); finishReveal(); return; }
-  const t0 = performance.now() + 140; let boomed = false;
+  const END = V4.FLIGHT[1] + 1000;
+  if (reduce) { v4Render(END, g); finishReveal(); return; }
+  const t0 = performance.now() + 140; let sparked = false, boomed = false;
   const tick = now => {
     const t = Math.max(0, now - t0);
     v4Render(t, g);
-    if (t >= 2240 && !boomed) { boomed = true; navigator.vibrate?.(14); burst(root.querySelector('.v4-me')); }
-    if (t < 2950 && modal.classList.contains('open')) v4Raf = requestAnimationFrame(tick);
-    else if (modal.classList.contains('open')) { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 900); }
+    if (t >= V4.FLIGHT[1] - 40 && !sparked) { sparked = true; navigator.vibrate?.(10); burst(root.querySelector('.v4-badge'), 'soft'); }
+    if (t >= V4.FLIGHT[1] + 700 && !boomed) { boomed = true; burst(root.querySelector('.v4-me')); }
+    if (t < END && modal.classList.contains('open')) v4Raf = requestAnimationFrame(tick);
+    else if (modal.classList.contains('open')) { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 1000); }
   };
   v4Raf = requestAnimationFrame(tick);
 }

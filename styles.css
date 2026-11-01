@@ -381,7 +381,10 @@ p { overflow-wrap: break-word; }
 #modal.v4 .v4stage { display: block; }
 #modal.v4 .modal { padding-top: 20px; gap: 14px; }
 .v4stage > * { position: absolute; left: 0; top: 0; }
-.v4-me { width: 64px; height: 64px; opacity: 0; will-change: transform, opacity; }
-.v4-av { position: absolute; inset: 0; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
-.v4-badge { position: absolute; left: 44px; top: -4px; width: 24px; height: 24px; border-radius: 7px; object-fit: cover; box-shadow: 0 0 0 2px #fff, 0 3px 8px rgba(0,0,0,.22); opacity: 0; will-change: transform, opacity; }
-.v4-ring { width: 64px; height: 64px; border-radius: 50%; border: 2px solid #8fdcb3; opacity: 0; }
+.v4stage .fly-dots { position: absolute; inset: 0; }
+.v4-me { width: 52px; height: 52px; opacity: 0; will-change: transform, opacity; z-index: 1; }
+.v4-av { position: absolute; inset: 0; width: 52px; height: 52px; border-radius: 50%; object-fit: cover; box-shadow: 0 3px 10px rgba(0,0,0,.1); }
+.v4-badge { position: absolute; left: 36px; top: -2px; width: 18px; height: 18px; border-radius: 5px; object-fit: cover; box-shadow: 0 0 0 1.5px #fff, 0 2px 6px rgba(0,0,0,.22); opacity: 0; will-change: transform, opacity; }
+.v4-halo { width: 76px; height: 76px; border-radius: 50%; opacity: 0; will-change: transform, opacity;
+  background: radial-gradient(circle, rgba(76,201,140,0) 50%, rgba(76,201,140,.26) 60%, rgba(76,201,140,.10) 68%, rgba(76,201,140,0) 76%); }
+#modal.v4 .env { z-index: 2; }
