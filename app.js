@@ -359,7 +359,6 @@ function envRender(t, g) {
   const ang = lerp(180, 0, smooth(seg(t, 1040, 1380)));
   flap.style.transform = `rotateX(${ang}deg)`;
   flap.style.zIndex = ang < 90 ? 4 : 1;
-  flap.classList.toggle('inside', ang > 90);
   logo.style.opacity = smooth(pop) * (1 - smooth(seg(t, 1060, 1180)));
   // green seal stamps on
   const st = seg(t, 1330, 1560);
@@ -417,7 +416,7 @@ function playEnvelope(key) {
 // V4: V3's envelope inside the V1 popup. The member waits on the right; the sealed envelope flies a soft arc
 // onto them (like V2), the badge snaps on, the member glides to centre with a halo + confetti, then it dissolves into the card.
 const V4 = { ENV: [96, 86], AV: [258, 76], CENTER: [155.5, 76], CTRL: -6, FLIGHT: [1600, 2440], DOTS: 30 };
-let v4Raf = 0;
+let v4Raf = 0, flyTick = 0;
 const v4Arc = (u, g) => { const x = lerp(g.cx, g.tx, u); const y = (1 - u) * (1 - u) * g.cy + 2 * (1 - u) * u * g.ky + u * u * g.ty; return [x, y]; };
 function v4Render(t, g) {
   envRender(t, g);
@@ -456,10 +455,10 @@ function playV4() {
     v4Render(t, g);
     if (t > V4.FLIGHT[0] + 60 && t < V4.FLIGHT[1] - 60 && g.pos) {        // sparkle trail behind the envelope
       const d = device.getBoundingClientRect(), k = device.offsetWidth / d.width, rr = root.getBoundingClientRect();
-      sparkAt((rr.left - d.left) * k + g.pos[0], (rr.top - d.top) * k + g.pos[1], 2, root.querySelector('.env').style.getPropertyValue('--brand'));
+      if ((flyTick = (flyTick + 1) % 3) === 0) sparkAt((rr.left - d.left) * k + g.pos[0], (rr.top - d.top) * k + g.pos[1], 1);
     }
     if (t >= V4.FLIGHT[1] - 40 && !sparked) { sparked = true; navigator.vibrate?.(10); burst(root.querySelector('.v4-badge'), 'soft'); }
-    if (t >= V4.FLIGHT[1] + 700 && !boomed) { boomed = true; burst(root.querySelector('.v4-me')); }
+    if (t >= V4.FLIGHT[1] + 700 && !boomed) { boomed = true; burst(root.querySelector('.v4-me'), 'light'); }
     if (t < END && modal.classList.contains('open')) v4Raf = requestAnimationFrame(tick);
     else if (modal.classList.contains('open')) { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 1000); }
   };
@@ -482,7 +481,9 @@ function burst(fromEl, mode) {
       w: 5 + Math.random() * 5, h: 8 + Math.random() * 7, c: COLORS[i % COLORS.length], shape: Math.random() < .28 ? 'dot' : Math.random() < .5 ? 'rect' : 'ribbon',
       life: 0, max: 95 + Math.random() * 55, tilt: Math.random() * 6.28 });
   } };
-  if (mode === 'soft') {                                      // V2: a light sparkle off the docking point
+  if (mode === 'light') {                                     // V4: a small, tidy burst from the member only
+    add(28, ox, oy, Math.PI * 1.1, -Math.PI / 2, 8.5);
+  } else if (mode === 'soft') {                                      // V2: a light sparkle off the docking point
     const n0 = parts.length; add(30, ox, oy, Math.PI * 2, 0, 5);
     for (let i = n0; i < parts.length; i++) { const p = parts[i]; p.c = SOFT[i % SOFT.length]; p.g *= .45; p.w *= .7; p.h *= .7; p.max *= .7; }
   } else {

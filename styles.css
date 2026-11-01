@@ -389,20 +389,9 @@ p { overflow-wrap: break-word; }
   background: radial-gradient(circle, rgba(76,201,140,0) 50%, rgba(76,201,140,.26) 60%, rgba(76,201,140,.10) 68%, rgba(76,201,140,0) 76%); }
 #modal.v4 .env { z-index: 2; }
 
-/* envelope lining in the benefit's brand colour (visible while the envelope is open) */
-.env { --brand: #E50914; }
-.env-liner { fill: var(--brand); opacity: .9; }
-.env-flap.inside path { fill: var(--brand); stroke: rgba(0,0,0,.08); }
-.env-flap.inside { filter: brightness(1.04); }
-
-/* V4 premium stage */
-#modal.v4 .v4stage { border-radius: 14px; overflow: hidden;
-  background: radial-gradient(120% 95% at 50% 0%, #eef5ff 0%, #f7faff 45%, #ffffff 80%);
-  box-shadow: inset 0 0 0 1px rgba(15,23,42,.05); }
-#modal.v4 .v4stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55;
-  background-image: radial-gradient(rgba(120,150,200,.18) 1px, transparent 1.2px); background-size: 14px 14px;
-  -webkit-mask-image: radial-gradient(80% 70% at 50% 40%, #000, transparent); mask-image: radial-gradient(80% 70% at 50% 40%, #000, transparent); }
-.v4-av { box-shadow: 0 0 0 3px #fff, 0 6px 18px rgba(15,23,42,.18) !important; }
+/* V4: original white look; the member gets a clean white ring, faint green "waiting" ripples */
+.env-liner { display: none; }
+.v4-av { box-shadow: 0 0 0 3px #fff, 0 4px 14px rgba(15,23,42,.14) !important; }
 .v4-wait, .v4-burst { width: 52px; height: 52px; border-radius: 50%; opacity: 0; will-change: transform, opacity; }
-.v4-wait { border: 1.5px solid rgba(76,140,240,.45); background: radial-gradient(circle, rgba(76,140,240,.08), rgba(76,140,240,0) 70%); }
-.v4-burst { border: 2.5px solid #36c27c; box-shadow: 0 0 14px rgba(54,194,124,.35); }
+.v4-wait { border: 1.5px solid rgba(76,201,140,.35); }
+.v4-burst { border: 2px solid #4cc98c; }
