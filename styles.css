@@ -351,13 +351,13 @@ p { overflow-wrap: break-word; }
 .phone .stage, .shot .stage { padding-top: 0; }
 
 /* ---------- envelope (shared by V3 and V4) ---------- */
-.env { position: absolute; left: 0; top: 0; width: 150px; height: 104px; perspective: 560px; transform-style: preserve-3d; opacity: 0; will-change: transform, opacity; }
+.env { position: absolute; left: 0; top: 0; width: 150px; height: 104px; opacity: 0; will-change: transform, opacity; }
 .env > * { position: absolute; left: 0; top: 0; }
 .env-shadow { left: 12%; top: 88%; width: 76%; height: 30px; border-radius: 50%; background: radial-gradient(closest-side, rgba(15,23,42,.24), rgba(15,23,42,.10) 55%, rgba(15,23,42,0)); }
 .env-back, .env-front { width: 150px; height: 104px; overflow: visible; }
 .env-back rect { fill: #e9eef5; stroke: #dde3ec; }
 .env-front { z-index: 3; }
-.env-front .ef-body { stroke: #dde3ec; stroke-width: 1; }
+.env-front .ef-body { fill: #fbfcfe; stroke: #dde3ec; stroke-width: 1; }   /* solid: a shared SVG gradient id resolved to the hidden copy and left it see-through */
 .env-front .ef-fold { fill: none; stroke: #e6ebf2; stroke-width: 1; stroke-linecap: round; }
 .env-logo { width: 62px; height: 62px; border-radius: 15px; object-fit: cover; z-index: 2; box-shadow: 0 6px 16px rgba(0,0,0,.2); will-change: transform, opacity; }
 .env-flap { width: 150px; height: 66px; overflow: visible; transform-origin: 50% 0; z-index: 1; will-change: transform; }

@@ -330,8 +330,7 @@ const ENV = { W: 150, H: 104 };
 const ENV_HTML = `<span class="env-shadow"></span>
   <svg class="env-back" viewBox="0 0 104 72"><rect x=".5" y=".5" width="103" height="71" rx="10" /></svg>
   <img class="env-logo" src="${A}logo-netflix.png" alt="">
-  <svg class="env-front" viewBox="0 0 104 72"><defs><linearGradient id="envG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f2f5f9"/></linearGradient></defs>
-    <path class="ef-body" d="M.5 9.5 L49.6 44.6 a4 4 0 0 0 4.8 0 L103.5 9.5 V61.5 a10 10 0 0 1 -10 10 H10.5 a10 10 0 0 1 -10 -10 Z" fill="url(#envG)" />
+  <svg class="env-front" viewBox="0 0 104 72"><path class="ef-body" d="M.5 9.5 L49.6 44.6 a4 4 0 0 0 4.8 0 L103.5 9.5 V61.5 a10 10 0 0 1 -10 10 H10.5 a10 10 0 0 1 -10 -10 Z" />
     <path class="ef-fold" d="M3.5 69 L44 41.5 M100.5 69 L60 41.5" /></svg>
   <svg class="env-flap" viewBox="0 0 104 46"><path d="M.5 10 a9.5 9.5 0 0 1 9.5 -9.5 H94 a9.5 9.5 0 0 1 9.5 9.5 L55.2 43.4 a5.5 5.5 0 0 1 -6.4 0 Z" /></svg>
   <span class="env-seal"><svg viewBox="0 0 20 20"><path d="M5.5 10.4l3 3 6-6.4" /></svg></span>`;
@@ -360,7 +359,7 @@ function envRender(t, g) {
   logo.style.transform = `translate3d(${ENV.W / 2 - 31}px, ${ly - 31}px, 0) rotate(${lr}deg) scale(${ls})`;
   // flap folds shut in 3D
   const ang = lerp(180, 0, smooth(seg(t, 1040, 1380)));
-  flap.style.transform = `rotateX(${ang}deg)`;
+  flap.style.transform = `scaleY(${Math.cos(ang * Math.PI / 180).toFixed(4)})`;   // 2D fold: no 3D clipping on phones
   flap.style.zIndex = ang < 90 ? 4 : 1;
   logo.style.opacity = smooth(pop) * (1 - smooth(seg(t, 1060, 1180)));
   // green seal stamps on
@@ -543,7 +542,7 @@ function v6Render(t, g) {
   const sc = lerp(BIG, MID, lift) * lerp(1, 1.16, tuck);                    // lands on the photo, swells slightly as it dissolves
   const rot = Math.sin(Math.PI * lift) * -7;
   env.style.transform = `translate3d(${187.5 - ENV.W / 2}px, ${by - ENV.H / 2}px, 0) rotate(${rot}deg) scale(${sc})`;
-  env.style.opacity = smooth(S('rise')) * (1 - tuck);
+  env.style.opacity = smooth(seg(t, V6T.rise[0], V6T.rise[0] + 120)) * (1 - tuck);
   shadow.style.opacity = 0;
   g.pos = [187.5, by];
   // logo: pops big in the middle of the screen, floats, then dives into the envelope
@@ -556,7 +555,7 @@ function v6Render(t, g) {
   logo.style.transform = `translate3d(${ENV.W / 2 - 31}px, ${ly - 31}px, 0) rotate(${lr}deg) scale(${ls})`;
   // flap closes (3D), logo tucked away under it, then the seal
   const ang = lerp(180, 0, smooth(S('flap')));
-  flap.style.transform = `rotateX(${ang}deg)`; flap.style.zIndex = ang < 90 ? 4 : 1;
+  flap.style.transform = `scaleY(${Math.cos(ang * Math.PI / 180).toFixed(4)})`; flap.style.zIndex = ang < 90 ? 4 : 1;   // 2D fold
   logo.style.opacity = smooth(pop) * (1 - smooth(seg(t, V6T.flap[0] + 40, V6T.flap[0] + 220)));
   const st = S('seal');
   seal.style.transform = `scale(${easeOutBack(st)})`; seal.style.opacity = smooth(st);
