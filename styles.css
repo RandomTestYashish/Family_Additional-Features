@@ -350,22 +350,38 @@ p { overflow-wrap: break-word; }
 @keyframes shine { to { left: 120%; } }
 .phone .stage, .shot .stage { padding-top: 0; }
 
-/* ---------- V3: envelope delivery (no popup) ---------- */
-.v3 { position: absolute; inset: 0; z-index: 12; pointer-events: none; visibility: hidden; }
-.v3.on { visibility: visible; }
-.v3 > *, .env > * { position: absolute; left: 0; top: 0; will-change: transform, opacity; backface-visibility: hidden; }
-.v3-scrim { inset: 0; width: 100%; height: 100%; background: rgba(17,24,39,.32); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); opacity: 0; }
-.env { width: 104px; height: 72px; perspective: 420px; transform-style: preserve-3d; filter: drop-shadow(0 14px 22px rgba(15,23,42,.18)) drop-shadow(0 2px 4px rgba(15,23,42,.08)); opacity: 0; }
-.env-back, .env-front { width: 104px; height: 72px; overflow: visible; }
+/* ---------- envelope (shared by V3 and V4) ---------- */
+.env { position: absolute; left: 0; top: 0; width: 150px; height: 104px; perspective: 560px; transform-style: preserve-3d; opacity: 0; will-change: transform, opacity; }
+.env > * { position: absolute; left: 0; top: 0; }
+.env-shadow { left: 12%; top: 88%; width: 76%; height: 30px; border-radius: 50%; background: radial-gradient(closest-side, rgba(15,23,42,.24), rgba(15,23,42,.10) 55%, rgba(15,23,42,0)); }
+.env-back, .env-front { width: 150px; height: 104px; overflow: visible; }
 .env-back rect { fill: #eef2f7; stroke: #dfe5ee; }
 .env-front { z-index: 3; }
 .env-front path { stroke: #dfe5ee; stroke-width: 1; }
-.env-logo { width: 44px; height: 44px; border-radius: 11px; object-fit: cover; z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
-.env-flap { width: 104px; height: 46px; overflow: visible; transform-origin: 50% 0; z-index: 1; backface-visibility: visible !important; }
+.env-logo { width: 62px; height: 62px; border-radius: 15px; object-fit: cover; z-index: 2; box-shadow: 0 6px 16px rgba(0,0,0,.2); will-change: transform, opacity; }
+.env-flap { width: 150px; height: 66px; overflow: visible; transform-origin: 50% 0; z-index: 1; will-change: transform; }
 .env-flap path { fill: #f8fafc; stroke: #dfe5ee; stroke-width: 1; }
-.env-seal { width: 22px; height: 22px; left: 41px; top: 31px; border-radius: 50%; background: linear-gradient(#36c27c, #1f9d5c); box-shadow: 0 0 0 2px #fff, 0 3px 8px rgba(31,157,92,.35); z-index: 5; opacity: 0; display: grid; place-items: center; }
-.env-seal svg, .v3-chip svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.env-seal { width: 30px; height: 30px; left: 60px; top: 45px; border-radius: 50%; background: linear-gradient(#36c27c, #1f9d5c); box-shadow: 0 0 0 2.5px #fff, 0 4px 10px rgba(31,157,92,.35);
+  z-index: 5; opacity: 0; display: grid; place-items: center; will-change: transform, opacity; }
+.env-seal svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- V3: envelope delivery (no popup) ---------- */
+.v3 { position: absolute; inset: 0; z-index: 12; pointer-events: none; visibility: hidden; }
+.v3.on { visibility: visible; }
+.v3 > .v3-scrim, .v3 > .v3-ring, .v3 > .v3-chip { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.v3-scrim { inset: 0; width: 100%; height: 100%; background: rgba(17,24,39,.36); opacity: 0; }   /* plain dim: a live backdrop blur made it stutter */
 .v3-ring { width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 2px solid #36c27c; opacity: 0; }
 .v3-chip { height: 22px; padding: 0 9px 0 6px; border-radius: 100px; background: #e7f7ee; color: #0f7033; border: 1px solid #a3dfb9; font-weight: 700; font-size: 11px; line-height: 12px;
   display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; opacity: 0; box-shadow: 0 4px 12px rgba(15,112,51,.12); }
-.v3-chip svg { stroke: #0f7033; width: 12px; height: 12px; }
+.v3-chip svg { width: 12px; height: 12px; fill: none; stroke: #0f7033; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- V4: envelope inside the popup ---------- */
+.v4stage { display: none; position: relative; width: 100%; height: 150px; }
+#modal.v4 .reveal, #modal.v4 .fly { display: none; }
+#modal.v4 .v4stage { display: block; }
+#modal.v4 .modal { padding-top: 20px; gap: 14px; }
+.v4stage > * { position: absolute; left: 0; top: 0; }
+.v4-me { width: 64px; height: 64px; opacity: 0; will-change: transform, opacity; }
+.v4-av { position: absolute; inset: 0; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.v4-badge { position: absolute; left: 44px; top: -4px; width: 24px; height: 24px; border-radius: 7px; object-fit: cover; box-shadow: 0 0 0 2px #fff, 0 3px 8px rgba(0,0,0,.22); opacity: 0; will-change: transform, opacity; }
+.v4-ring { width: 64px; height: 64px; border-radius: 50%; border: 2px solid #8fdcb3; opacity: 0; }

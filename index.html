@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Family – Additional Features</title>
-<link rel="stylesheet" href="fonts.css?v=15">
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="fonts.css?v=17">
+<link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
 <!-- Figma: Yashis-Imaginarium_22-jun, page "Family_Additional Features" (81564:168380), section "Manager's view".
@@ -17,6 +17,7 @@
     <option value="1">V1 · Badge reveal</option>
     <option value="2">V2 · Fly to member</option>
     <option value="3">V3 · Envelope</option>
+    <option value="4">V4 · Envelope popup</option>
   </select>
 </label>
 <div class="stage">
@@ -253,6 +254,12 @@
           <img class="fly-av" src="assets/avatar-shree.png" alt="">
           <img class="fly-logo" src="assets/logo-netflix.png" alt="">
         </div>
+        <!-- V4: envelope inside the popup, then the member appears with the badge -->
+        <div class="v4stage" aria-hidden="true">
+          <span class="v4-ring"></span>
+          <span class="v4-me"><img class="v4-av" src="assets/avatar-shree.png" alt=""><img class="v4-badge" src="assets/logo-netflix.png" alt=""></span>
+          <div class="env" data-env></div>
+        </div>
         <div class="modal-body">
           <p class="t16b" id="modalTitle">Reminder sent successfully!</p>
           <p class="t14 cap2" id="modalText">Shree Verma has been notified about<br>the Netflix benefit.</p>
@@ -263,14 +270,7 @@
     <!-- ================= V3: no popup — the benefit is sealed in an envelope and delivered to the member ================= -->
     <div class="v3" id="v3" aria-hidden="true">
       <div class="v3-scrim"></div>
-      <div class="env">
-        <svg class="env-back" viewBox="0 0 104 72"><rect x=".5" y=".5" width="103" height="71" rx="11" /></svg>
-        <img class="env-logo" src="assets/logo-netflix.png" alt="">
-        <svg class="env-front" viewBox="0 0 104 72"><defs><linearGradient id="envG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#f3f6fa"/></linearGradient></defs>
-          <path d="M.5 24 L52 52 L103.5 24 V60.5 a11 11 0 0 1 -11 11 H11.5 a11 11 0 0 1 -11 -11 Z" fill="url(#envG)" /></svg>
-        <svg class="env-flap" viewBox="0 0 104 46"><path d="M.5 11 a10.5 10.5 0 0 1 10.5 -10.5 H93 a10.5 10.5 0 0 1 10.5 10.5 L56.4 42.2 a7 7 0 0 1 -8.8 0 Z" /></svg>
-        <span class="env-seal"><svg viewBox="0 0 20 20"><path d="M5.5 10.4l3 3 6-6.4" /></svg></span>
-      </div>
+      <div class="env" data-env></div>
       <span class="v3-ring"></span>
       <span class="v3-chip"><svg viewBox="0 0 20 20"><path d="M5.5 10.4l3 3 6-6.4" /></svg>Sent</span>
     </div>
@@ -279,6 +279,6 @@
     <div class="toast" id="toast"></div>
   </div>
 </div>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>

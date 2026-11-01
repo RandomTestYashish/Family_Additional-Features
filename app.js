@@ -119,7 +119,7 @@ function close(el) { el.classList.remove('open'); el.setAttribute('aria-hidden',
 let pendingKey = null, autoClose;
 // ---------- version (V1 badge reveal / V2 fly to member) ----------
 const verSel = document.getElementById('ver');
-let VER = (() => { const q = new URLSearchParams(location.search).get('ver'); const ok = v => [1, 2, 3].includes(+v) ? +v : 1; if (q) return ok(q); try { return ok(localStorage.getItem('fam-ver')); } catch { return 1; } })();
+let VER = (() => { const q = new URLSearchParams(location.search).get('ver'); const ok = v => [1, 2, 3, 4].includes(+v) ? +v : 1; if (q) return ok(q); try { return ok(localStorage.getItem('fam-ver')); } catch { return 1; } })();
 verSel.value = String(VER);
 verSel.addEventListener('change', () => {
   VER = +verSel.value;
@@ -128,7 +128,7 @@ verSel.addEventListener('change', () => {
   sent.clear();                                   // reset the cards so the new animation can be tried straight away
   homeList.innerHTML = LISTS.home.map(card).join(''); detailList.innerHTML = LISTS.detail.map(card).join('');
   if (sheet.classList.contains('open')) renderSheet();
-  toast(['', 'V1 · Badge reveal', 'V2 · Fly to member', 'V3 · Envelope'][VER]);
+  toast(['', 'V1 · Badge reveal', 'V2 · Fly to member', 'V3 · Envelope', 'V4 · Envelope popup'][VER]);
 });
 function sendReminder(key) {
   const [b, p] = key.split(':');
@@ -142,9 +142,12 @@ function sendReminder(key) {
   modal.querySelector('.fly-av').src = av.src;
   modal.querySelectorAll('.fly-logo, .fly-badge').forEach(i => { i.src = logo.src; });
   modal.classList.remove('closing');
+  modal.querySelector('.v4-av').src = av.src;
+  modal.querySelectorAll('.v4-badge, .v4stage .env-logo').forEach(i => { i.src = logo.src; });
   modal.classList.toggle('v2', VER === 2);
+  modal.classList.toggle('v4', VER === 4);
   open(modal);
-  VER === 2 ? playFly() : playReveal();
+  VER === 2 ? playFly() : VER === 4 ? playV4() : playReveal();
 }
 
 // Close: the popup shrinks onto the card that sent the reminder and dissolves into it,
@@ -318,39 +321,49 @@ function playFly() {
   flyRaf = requestAnimationFrame(tick);
 }
 
-// ---------- V3: envelope delivery, no popup (~2.3 s, one rAF clock) ----------
-const v3 = document.getElementById('v3');
-const ENV = { W: 104, H: 72 };
-let envRaf = 0;
+// ---------- envelope (V3 + V4): one rAF clock drives every part ----------
+const ENV = { W: 150, H: 104 };
+const ENV_HTML = `<span class="env-shadow"></span>
+  <svg class="env-back" viewBox="0 0 104 72"><rect x=".5" y=".5" width="103" height="71" rx="11" /></svg>
+  <img class="env-logo" src="${A}logo-netflix.png" alt="">
+  <svg class="env-front" viewBox="0 0 104 72"><defs><linearGradient id="envG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#f3f6fa"/></linearGradient></defs>
+    <path d="M.5 24 L52 52 L103.5 24 V60.5 a11 11 0 0 1 -11 11 H11.5 a11 11 0 0 1 -11 -11 Z" fill="url(#envG)" /></svg>
+  <svg class="env-flap" viewBox="0 0 104 46"><path d="M.5 11 a10.5 10.5 0 0 1 10.5 -10.5 H93 a10.5 10.5 0 0 1 10.5 10.5 L56.4 42.2 a7 7 0 0 1 -8.8 0 Z" /></svg>
+  <span class="env-seal"><svg viewBox="0 0 20 20"><path d="M5.5 10.4l3 3 6-6.4" /></svg></span>`;
+document.querySelectorAll('[data-env]').forEach(el => { el.innerHTML = ENV_HTML; });
+const smooth = x => x * x * x * (x * (x * 6 - 15) + 10);                // smootherstep: zero speed and acceleration at both ends
+
+// t in ms; g = { root, cx, cy, tx, ty, ky, base, end, scrim }
 function envRender(t, g) {
-  const q = sel => v3.querySelector(sel);
-  const env = q('.env'), logo = q('.env-logo'), flap = q('.env-flap'), seal = q('.env-seal'), scrim = q('.v3-scrim');
-  const sIn = seg(t, 0, 260), sOut = seg(t, 1560, 2060);
-  scrim.style.opacity = easeOut(sIn) * (1 - easeInOut(sOut));
-  // envelope rises in, takes a breath before take-off, then flies to the member and dissolves into the photo
-  const rise = seg(t, 0, 460), squash = seg(t, 1440, 1580), flight = seg(t, 1540, 2180);
-  const f = easeInOut(flight);
-  const bx = lerp(g.cx, g.tx, f), by = (1 - f) * (1 - f) * g.cy + 2 * (1 - f) * f * g.ky + f * f * g.ty;    // quadratic arc
-  const breathe = Math.sin(Math.PI * squash);
-  const sc = lerp(.72, 1, easeOutBack(rise)) * lerp(1, .22, Math.pow(f, 1.3));
-  const sx = sc * (1 + breathe * .05), sy = sc * (1 - breathe * .07);
-  const rot = Math.sin(Math.PI * f) * -14;
-  env.style.transform = `translate3d(${bx - ENV.W / 2}px, ${by - ENV.H / 2 + (1 - easeOut(rise)) * 36}px, 0) rotate(${rot}deg) scale(${sx}, ${sy})`;
-  env.style.opacity = easeOut(rise) * (1 - easeInOut(seg(t, 2040, 2180)));
-  // logo pops above the open envelope, then drops in behind the front pocket
-  const pop = seg(t, 160, 560), drop = seg(t, 620, 1000), d = easeInOutSine(drop);
-  const ly = lerp(-40, 34, d), ls = lerp(0, 1, easeOutBack(pop)) * lerp(1, .8, d), lr = lerp(-10, 0, easeOut(pop)) + Math.sin(Math.PI * d) * 6;
-  logo.style.transform = `translate3d(${52 - 22}px, ${ly - 22}px, 0) rotate(${lr}deg) scale(${ls})`;
-  // flap folds shut (3D), passing over the pocket half-way
-  const fold = easeInOut(seg(t, 1000, 1320)), ang = lerp(180, 0, fold);
+  const q = sel => g.root.querySelector(sel);
+  const env = q('.env'), logo = q('.env-logo'), flap = q('.env-flap'), seal = q('.env-seal'), shadow = q('.env-shadow');
+  if (g.scrim) g.scrim.style.opacity = smooth(seg(t, 0, 320)) * (1 - smooth(seg(t, 1620, 2160)));
+  // rise in -> hold -> one smooth arc to the target (scale + gentle roll), fading only at the very end
+  const rise = seg(t, 0, 520), flight = seg(t, 1560, 2240), f = smooth(flight);
+  const bx = lerp(g.cx, g.tx, f), by = (1 - f) * (1 - f) * g.cy + 2 * (1 - f) * f * g.ky + f * f * g.ty;
+  const sc = g.base * lerp(.8, 1, easeOutBack(rise)) * lerp(1, g.end, smooth(Math.min(1, flight * 1.1)));
+  const lift = (1 - smooth(rise)) * 40 + Math.sin(Math.PI * seg(t, 1380, 1620)) * -6;   // small lift just before take-off
+  const rot = Math.sin(Math.PI * f) * -12;
+  env.style.transform = `translate3d(${bx - ENV.W / 2}px, ${by - ENV.H / 2 + lift}px, 0) rotate(${rot}deg) scale(${sc})`;
+  env.style.opacity = smooth(rise) * (1 - smooth(seg(t, 2080, 2240)));
+  shadow.style.opacity = 1 - smooth(seg(t, 1560, 1800));
+  // logo pops above the open envelope, then drops in behind the pocket
+  const pop = seg(t, 180, 600), drop = seg(t, 660, 1060), d = smooth(drop);
+  const ly = lerp(-58, 50, d), ls = easeOutBack(pop) * lerp(1, .8, d), lr = lerp(-10, 0, smooth(pop)) + Math.sin(Math.PI * d) * 5;
+  logo.style.transform = `translate3d(${ENV.W / 2 - 31}px, ${ly - 31}px, 0) rotate(${lr}deg) scale(${ls})`;
+  // flap folds shut in 3D
+  const ang = lerp(180, 0, smooth(seg(t, 1040, 1380)));
   flap.style.transform = `rotateX(${ang}deg)`;
   flap.style.zIndex = ang < 90 ? 4 : 1;
-  logo.style.opacity = easeOut(pop) * (1 - seg(t, 1120, 1260));   // tucked away once the flap covers it
+  logo.style.opacity = smooth(pop) * (1 - smooth(seg(t, 1060, 1180)));
   // green seal stamps on
-  const st = seg(t, 1280, 1500);
-  seal.style.transform = `scale(${lerp(0, 1, easeOutBack(st))})`; seal.style.opacity = easeOut(st);
-  return flight;
+  const st = seg(t, 1330, 1560);
+  seal.style.transform = `scale(${easeOutBack(st)})`; seal.style.opacity = smooth(st);
 }
+
+// V3: no popup, the envelope is delivered to the member photo on the card
+const v3 = document.getElementById('v3');
+let envRaf = 0;
 function playEnvelope(key) {
   cancelAnimationFrame(envRaf);
   const scope = sheet.classList.contains('open') ? sheet : screens[current];
@@ -361,20 +374,19 @@ function playEnvelope(key) {
   const r = avEl?.getBoundingClientRect();
   const onScreen = r && r.top > d.top + 40 && r.bottom < d.bottom - 40;
   const tx = onScreen ? (r.left + r.width / 2 - d.left) * k : 187.5, ty = onScreen ? (r.top + r.height / 2 - d.top) * k : H - 140;
-  const g = { cx: 187.5, cy: H * .46, tx, ty, ky: Math.min(H * .46, ty) - 150 };
+  const g = { root: v3, scrim: v3.querySelector('.v3-scrim'), cx: 187.5, cy: H * .45, tx, ty, ky: Math.min(H * .45, ty) - 170, base: 1, end: .16 };
   v3.classList.add('on'); envRender(0, g);
   const deliver = () => {
     if (key) document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); });
     if (!onScreen) return;
     navigator.vibrate?.(12);
-    avEl.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.32)', offset: .35 }, { transform: 'scale(.94)', offset: .65 }, { transform: 'scale(1)' }], { duration: 620, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    avEl.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.3)', offset: .35 }, { transform: 'scale(.95)', offset: .65 }, { transform: 'scale(1)' }], { duration: 640, easing: 'cubic-bezier(.2,.8,.2,1)' });
     const ring = v3.querySelector('.v3-ring'), chip = v3.querySelector('.v3-chip');
-    ring.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
-    ring.animate([{ transform: `translate3d(${tx}px, ${ty}px, 0) scale(1)`, opacity: .9 }, { transform: `translate3d(${tx}px, ${ty}px, 0) scale(2.2)`, opacity: 0 }], { duration: 750, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    ring.animate([{ transform: `translate3d(${tx}px, ${ty}px, 0) scale(1)`, opacity: .9 }, { transform: `translate3d(${tx}px, ${ty}px, 0) scale(2.2)`, opacity: 0 }], { duration: 760, easing: 'cubic-bezier(.2,.8,.2,1)' });
     const cw = chip.offsetWidth || 54;
     chip.animate([
       { transform: `translate3d(${tx - cw / 2}px, ${ty - 26}px, 0) scale(.6)`, opacity: 0 },
-      { transform: `translate3d(${tx - cw / 2}px, ${ty - 42}px, 0) scale(1.06)`, opacity: 1, offset: .22 },
+      { transform: `translate3d(${tx - cw / 2}px, ${ty - 42}px, 0) scale(1.05)`, opacity: 1, offset: .22 },
       { transform: `translate3d(${tx - cw / 2}px, ${ty - 40}px, 0) scale(1)`, opacity: 1, offset: .32 },
       { transform: `translate3d(${tx - cw / 2}px, ${ty - 40}px, 0) scale(1)`, opacity: 1, offset: .8 },
       { transform: `translate3d(${tx - cw / 2}px, ${ty - 52}px, 0) scale(.96)`, opacity: 0 },
@@ -387,13 +399,44 @@ function playEnvelope(key) {
   const tick = now => {
     const t = now - t0;
     envRender(t, g);
-    if (t >= 2160 && !delivered) { delivered = true; deliver(); }
-    if (t < 2200) envRaf = requestAnimationFrame(tick);
-    else setTimeout(() => { if (!envRaf || true) v3.classList.remove('on'); }, 1550);
+    if (t >= 2200 && !delivered) { delivered = true; deliver(); }
+    if (t < 2260) envRaf = requestAnimationFrame(tick);
+    else setTimeout(() => v3.classList.remove('on'), 1550);
   };
   envRaf = requestAnimationFrame(tick);
   window.__envFreeze = ms => { cancelAnimationFrame(envRaf); envRender(ms, g); };
   window.__envDeliver = ms => { cancelAnimationFrame(envRaf); envRender(2300, g); deliver(); document.getAnimations().forEach(an => { an.pause(); an.currentTime = ms; }); };
+}
+
+// V4: the same envelope inside the popup; it seals, flies off, and the member appears with the badge (V1 ending)
+let v4Raf = 0;
+function v4Render(t, g) {
+  envRender(t, g);
+  const q = sel => g.root.querySelector(sel);
+  const me = q('.v4-me'), badge = q('.v4-badge'), ring = q('.v4-ring');
+  const a = seg(t, 1880, 2320), b = seg(t, 2140, 2440), rg = seg(t, 2240, 2900);
+  const cx = 155.5, cy = 78;
+  me.style.transform = `translate3d(${cx - 32}px, ${cy - 32}px, 0) scale(${lerp(.5, 1, easeOutBack(a))})`; me.style.opacity = smooth(a);
+  badge.style.transform = `scale(${easeOutBack(b)}) rotate(${lerp(-20, 0, smooth(b))}deg)`; badge.style.opacity = smooth(b);
+  ring.style.transform = `translate3d(${cx - 32}px, ${cy - 32}px, 0) scale(${lerp(1, 1.9, smooth(rg))})`; ring.style.opacity = rg > 0 ? (1 - smooth(rg)) : 0;
+}
+function playV4() {
+  running.forEach(a => a.cancel()); running = [];
+  cancelAnimationFrame(v4Raf); clearTimeout(autoClose);
+  const root = modal.querySelector('.v4stage');
+  const g = { root, cx: 155.5, cy: 84, tx: 360, ty: -70, ky: -10, base: .78, end: .42 };
+  v4Render(0, g);
+  running.push({ cancel: () => cancelAnimationFrame(v4Raf), pause() { this.cancel(); }, set currentTime(v) { v4Render(v, g); } });
+  if (reduce) { v4Render(3000, g); finishReveal(); return; }
+  const t0 = performance.now() + 140; let boomed = false;
+  const tick = now => {
+    const t = Math.max(0, now - t0);
+    v4Render(t, g);
+    if (t >= 2240 && !boomed) { boomed = true; navigator.vibrate?.(14); burst(root.querySelector('.v4-me')); }
+    if (t < 2950 && modal.classList.contains('open')) v4Raf = requestAnimationFrame(tick);
+    else if (modal.classList.contains('open')) { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 900); }
+  };
+  v4Raf = requestAnimationFrame(tick);
 }
 
 // ---------- confetti (canvas inside the 375 x 812 frame) ----------
