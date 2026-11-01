@@ -524,8 +524,8 @@ function playV5(key) {
 // ---------- V6: one element at a time, in the air; nothing plays on the card ----------
 // dim -> big half-envelope rises from the bottom -> big logo pops mid-screen -> dives in -> flap + seal
 // -> envelope lifts, shrinking, to the centre where the profile appears -> tucks into it -> badge -> line -> dissolve
-const V6T = { dim: [0, 450], rise: [250, 1050], pop: [950, 1450], dive: [1700, 2300], flap: [2300, 2750], seal: [2700, 2980],
-  lift: [3050, 3980], prof: [3250, 3800], tuck: [3820, 4180], badge: [4180, 4520], label: [4400, 4750], out: [5500, 6050] };
+const V6T = { dim: [0, 320], rise: [100, 720], pop: [620, 980], dive: [1120, 1580], flap: [1580, 1900], seal: [1870, 2080],
+  lift: [2140, 2780], prof: [2240, 2640], tuck: [2760, 3120], badge: [2980, 3280], label: [3120, 3420], out: [3950, 4350] };
 let v6Raf = 0, v6Tick = 0;
 function v6Render(t, g) {
   const q = sel => v3.querySelector(sel);
@@ -536,19 +536,19 @@ function v6Render(t, g) {
   scrim.style.opacity = smooth(S('dim')) * (1 - out);
   // envelope: rises to half-visible at the bottom (big), later lifts to the centre while shrinking, then tucks into the profile
   const rise = smooth(S('rise')), lift = smooth(S('lift')), tuck = smooth(S('tuck'));
-  const BIG = g.big, MID = .42;
-  let by = lerp(g.H + 130, g.H + 6, rise);
-  by = lerp(by, g.my + 18, lift);
-  by = lerp(by, g.my, tuck);
-  const sc = lerp(lerp(BIG, MID, lift), .1, tuck);
+  const BIG = g.big, MID = .5;
+  const rest = g.H - ENV.H * BIG / 2 - 28;                                  // whole envelope visible, near full width
+  let by = lerp(g.H + ENV.H * BIG / 2 + 20, rest, rise);
+  by = lerp(by, g.my, lift);
+  const sc = lerp(BIG, MID, lift) * lerp(1, 1.16, tuck);                    // lands on the photo, swells slightly as it dissolves
   const rot = Math.sin(Math.PI * lift) * -7;
   env.style.transform = `translate3d(${187.5 - ENV.W / 2}px, ${by - ENV.H / 2}px, 0) rotate(${rot}deg) scale(${sc})`;
-  env.style.opacity = smooth(S('rise')) * (1 - smooth(seg(t, V6T.tuck[0], V6T.tuck[1])));
+  env.style.opacity = smooth(S('rise')) * (1 - tuck);
   shadow.style.opacity = 0;
   g.pos = [187.5, by];
   // logo: pops big in the middle of the screen, floats, then dives into the envelope
   const pop = S('pop'), dive = smooth(S('dive'));
-  const startLy = 52 + (g.my - (g.H + 6)) / BIG;                         // env-local y that sits at screen centre
+  const startLy = 52 + (g.my - rest) / BIG;                         // env-local y that sits at screen centre
   const hover = Math.sin(Math.max(0, t - V6T.pop[1]) / 380) * 4 * (1 - dive);
   const ly = lerp(startLy, 50, dive) + hover / BIG;
   const ls = easeOutBack(pop) * lerp(1.08, .8, dive);
@@ -583,7 +583,7 @@ function playV6(key) {
   v3.querySelector('.v5-badge').src = v3.querySelector('.env-logo').src = A + BENEFITS[b].logo;
   v3.querySelector('.v5-label').textContent = `Reminder sent to ${PEOPLE[p].short}`;
   const H = device.offsetHeight;
-  const g = { H, my: H * .42, big: 2.25 };
+  const g = { H, my: H * .40, big: 2.35 };
   const END = V6T.out[1] + 40;
   v3.classList.add('on', 'v6'); v6Render(0, g);
   const finish = () => { v3.classList.remove('on', 'v6'); document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); }); };

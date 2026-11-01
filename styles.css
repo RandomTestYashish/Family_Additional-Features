@@ -420,5 +420,5 @@ p { overflow-wrap: break-word; }
 
 /* V5: deeper, vignetted dim so the big envelope and logo pop */
 .v3.v6 .v3-scrim { background: radial-gradient(120% 80% at 50% 42%, rgba(12,17,30,.52), rgba(12,17,30,.78)); -webkit-backdrop-filter: none; backdrop-filter: none; }
-.v3.v6 .env { z-index: 2; }
+.v3.v6 .env { z-index: 4; }   /* envelope sits over the photo and dissolves there */
 .v3.v6 .v5-wait { border-color: rgba(255,255,255,.6); }
