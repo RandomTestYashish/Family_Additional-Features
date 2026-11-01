@@ -349,3 +349,23 @@ p { overflow-wrap: break-word; }
 .okbtn.shine::after { content: ''; position: absolute; top: 0; bottom: 0; width: 60px; left: -80px; background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); animation: shine .9s .1s ease forwards; }
 @keyframes shine { to { left: 120%; } }
 .phone .stage, .shot .stage { padding-top: 0; }
+
+/* ---------- V3: envelope delivery (no popup) ---------- */
+.v3 { position: absolute; inset: 0; z-index: 12; pointer-events: none; visibility: hidden; }
+.v3.on { visibility: visible; }
+.v3 > *, .env > * { position: absolute; left: 0; top: 0; will-change: transform, opacity; backface-visibility: hidden; }
+.v3-scrim { inset: 0; width: 100%; height: 100%; background: rgba(17,24,39,.32); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); opacity: 0; }
+.env { width: 104px; height: 72px; perspective: 420px; transform-style: preserve-3d; filter: drop-shadow(0 14px 22px rgba(15,23,42,.18)) drop-shadow(0 2px 4px rgba(15,23,42,.08)); opacity: 0; }
+.env-back, .env-front { width: 104px; height: 72px; overflow: visible; }
+.env-back rect { fill: #eef2f7; stroke: #dfe5ee; }
+.env-front { z-index: 3; }
+.env-front path { stroke: #dfe5ee; stroke-width: 1; }
+.env-logo { width: 44px; height: 44px; border-radius: 11px; object-fit: cover; z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+.env-flap { width: 104px; height: 46px; overflow: visible; transform-origin: 50% 0; z-index: 1; backface-visibility: visible !important; }
+.env-flap path { fill: #f8fafc; stroke: #dfe5ee; stroke-width: 1; }
+.env-seal { width: 22px; height: 22px; left: 41px; top: 31px; border-radius: 50%; background: linear-gradient(#36c27c, #1f9d5c); box-shadow: 0 0 0 2px #fff, 0 3px 8px rgba(31,157,92,.35); z-index: 5; opacity: 0; display: grid; place-items: center; }
+.env-seal svg, .v3-chip svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.v3-ring { width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 2px solid #36c27c; opacity: 0; }
+.v3-chip { height: 22px; padding: 0 9px 0 6px; border-radius: 100px; background: #e7f7ee; color: #0f7033; border: 1px solid #a3dfb9; font-weight: 700; font-size: 11px; line-height: 12px;
+  display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; opacity: 0; box-shadow: 0 4px 12px rgba(15,112,51,.12); }
+.v3-chip svg { stroke: #0f7033; width: 12px; height: 12px; }

@@ -119,7 +119,7 @@ function close(el) { el.classList.remove('open'); el.setAttribute('aria-hidden',
 let pendingKey = null, autoClose;
 // ---------- version (V1 badge reveal / V2 fly to member) ----------
 const verSel = document.getElementById('ver');
-let VER = (() => { const q = new URLSearchParams(location.search).get('ver'); if (q) return q === '2' ? 2 : 1; try { return +localStorage.getItem('fam-ver') === 2 ? 2 : 1; } catch { return 1; } })();
+let VER = (() => { const q = new URLSearchParams(location.search).get('ver'); const ok = v => [1, 2, 3].includes(+v) ? +v : 1; if (q) return ok(q); try { return ok(localStorage.getItem('fam-ver')); } catch { return 1; } })();
 verSel.value = String(VER);
 verSel.addEventListener('change', () => {
   VER = +verSel.value;
@@ -128,11 +128,12 @@ verSel.addEventListener('change', () => {
   sent.clear();                                   // reset the cards so the new animation can be tried straight away
   homeList.innerHTML = LISTS.home.map(card).join(''); detailList.innerHTML = LISTS.detail.map(card).join('');
   if (sheet.classList.contains('open')) renderSheet();
-  toast(VER === 2 ? 'V2 · Fly to member' : 'V1 · Badge reveal');
+  toast(['', 'V1 · Badge reveal', 'V2 · Fly to member', 'V3 · Envelope'][VER]);
 });
 function sendReminder(key) {
   const [b, p] = key.split(':');
   sent.add(key);
+  if (VER === 3) return playEnvelope(key);
   pendingKey = key;                       // the card flips to "sent" once the popup closes, so the user sees it happen
   document.getElementById('modalText').innerHTML = `${PEOPLE[p].full} has been notified about<br>the ${BENEFITS[b].name} benefit.`;
   const av = document.getElementById('rvAvatar'), logo = document.getElementById('rvLogo');
@@ -150,7 +151,6 @@ function sendReminder(key) {
 // then that card glows and its button ticks over to "sent".
 function closeModal(force) {
   if (!modal.classList.contains('open') || modal.classList.contains('closing')) return;
-  if (VER === 2 && !force && modal.querySelector('.okbtn').disabled) return;   // V2 waits for Ok, Done
   clearTimeout(autoClose);
   modal.classList.add('closing');
   const key = pendingKey; pendingKey = null;
@@ -303,8 +303,8 @@ function playFly() {
   cancelAnimationFrame(flyRaf); flySparked = false;
   const dotsEl = modal.querySelector('.fly-dots');
   if (dotsEl.children.length !== FLY.DOTS) dotsEl.innerHTML = '<i></i>'.repeat(FLY.DOTS);
-  const ok = modal.querySelector('.okbtn'); ok.disabled = true; ok.classList.remove('shine');
-  if (reduce) { flyRender(FLY.T); ok.disabled = false; return; }
+  clearTimeout(autoClose);
+  if (reduce) { flyRender(FLY.T); finishReveal(); return; }
   flyRender(0);
   const t0 = performance.now() + 160;                 // let the card start opening first
   running.push({ cancel: () => cancelAnimationFrame(flyRaf), pause() { this.cancel(); }, set currentTime(v) { flyRender(v); } });
@@ -312,10 +312,88 @@ function playFly() {
     const t = now - t0;
     const st = flyRender(Math.max(0, t));
     if (st.landed && !flySparked) { flySparked = true; navigator.vibrate?.(10); burst(modal.querySelector('.fly-logo'), 'soft'); }
-    if (t >= 2080 && ok.disabled) { ok.disabled = false; ok.classList.add('shine'); }
     if (t < FLY.T + 50 && modal.classList.contains('open')) flyRaf = requestAnimationFrame(tick);
+    else if (modal.classList.contains('open')) { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 1100); }   // hold, then dissolve into the card like V1
   };
   flyRaf = requestAnimationFrame(tick);
+}
+
+// ---------- V3: envelope delivery, no popup (~2.3 s, one rAF clock) ----------
+const v3 = document.getElementById('v3');
+const ENV = { W: 104, H: 72 };
+let envRaf = 0;
+function envRender(t, g) {
+  const q = sel => v3.querySelector(sel);
+  const env = q('.env'), logo = q('.env-logo'), flap = q('.env-flap'), seal = q('.env-seal'), scrim = q('.v3-scrim');
+  const sIn = seg(t, 0, 260), sOut = seg(t, 1560, 2060);
+  scrim.style.opacity = easeOut(sIn) * (1 - easeInOut(sOut));
+  // envelope rises in, takes a breath before take-off, then flies to the member and dissolves into the photo
+  const rise = seg(t, 0, 460), squash = seg(t, 1440, 1580), flight = seg(t, 1540, 2180);
+  const f = easeInOut(flight);
+  const bx = lerp(g.cx, g.tx, f), by = (1 - f) * (1 - f) * g.cy + 2 * (1 - f) * f * g.ky + f * f * g.ty;    // quadratic arc
+  const breathe = Math.sin(Math.PI * squash);
+  const sc = lerp(.72, 1, easeOutBack(rise)) * lerp(1, .22, Math.pow(f, 1.3));
+  const sx = sc * (1 + breathe * .05), sy = sc * (1 - breathe * .07);
+  const rot = Math.sin(Math.PI * f) * -14;
+  env.style.transform = `translate3d(${bx - ENV.W / 2}px, ${by - ENV.H / 2 + (1 - easeOut(rise)) * 36}px, 0) rotate(${rot}deg) scale(${sx}, ${sy})`;
+  env.style.opacity = easeOut(rise) * (1 - easeInOut(seg(t, 2040, 2180)));
+  // logo pops above the open envelope, then drops in behind the front pocket
+  const pop = seg(t, 160, 560), drop = seg(t, 620, 1000), d = easeInOutSine(drop);
+  const ly = lerp(-40, 34, d), ls = lerp(0, 1, easeOutBack(pop)) * lerp(1, .8, d), lr = lerp(-10, 0, easeOut(pop)) + Math.sin(Math.PI * d) * 6;
+  logo.style.transform = `translate3d(${52 - 22}px, ${ly - 22}px, 0) rotate(${lr}deg) scale(${ls})`;
+  // flap folds shut (3D), passing over the pocket half-way
+  const fold = easeInOut(seg(t, 1000, 1320)), ang = lerp(180, 0, fold);
+  flap.style.transform = `rotateX(${ang}deg)`;
+  flap.style.zIndex = ang < 90 ? 4 : 1;
+  logo.style.opacity = easeOut(pop) * (1 - seg(t, 1120, 1260));   // tucked away once the flap covers it
+  // green seal stamps on
+  const st = seg(t, 1280, 1500);
+  seal.style.transform = `scale(${lerp(0, 1, easeOutBack(st))})`; seal.style.opacity = easeOut(st);
+  return flight;
+}
+function playEnvelope(key) {
+  cancelAnimationFrame(envRaf);
+  const scope = sheet.classList.contains('open') ? sheet : screens[current];
+  const card = scope.querySelector(`[data-remind="${key}"]`)?.closest('.bcard');
+  const avEl = card?.querySelector('.av36');
+  const d = device.getBoundingClientRect(), k = device.offsetWidth / d.width, H = device.offsetHeight;
+  v3.querySelector('.env-logo').src = A + BENEFITS[key.split(':')[0]].logo;
+  const r = avEl?.getBoundingClientRect();
+  const onScreen = r && r.top > d.top + 40 && r.bottom < d.bottom - 40;
+  const tx = onScreen ? (r.left + r.width / 2 - d.left) * k : 187.5, ty = onScreen ? (r.top + r.height / 2 - d.top) * k : H - 140;
+  const g = { cx: 187.5, cy: H * .46, tx, ty, ky: Math.min(H * .46, ty) - 150 };
+  v3.classList.add('on'); envRender(0, g);
+  const deliver = () => {
+    if (key) document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); });
+    if (!onScreen) return;
+    navigator.vibrate?.(12);
+    avEl.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.32)', offset: .35 }, { transform: 'scale(.94)', offset: .65 }, { transform: 'scale(1)' }], { duration: 620, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    const ring = v3.querySelector('.v3-ring'), chip = v3.querySelector('.v3-chip');
+    ring.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
+    ring.animate([{ transform: `translate3d(${tx}px, ${ty}px, 0) scale(1)`, opacity: .9 }, { transform: `translate3d(${tx}px, ${ty}px, 0) scale(2.2)`, opacity: 0 }], { duration: 750, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    const cw = chip.offsetWidth || 54;
+    chip.animate([
+      { transform: `translate3d(${tx - cw / 2}px, ${ty - 26}px, 0) scale(.6)`, opacity: 0 },
+      { transform: `translate3d(${tx - cw / 2}px, ${ty - 42}px, 0) scale(1.06)`, opacity: 1, offset: .22 },
+      { transform: `translate3d(${tx - cw / 2}px, ${ty - 40}px, 0) scale(1)`, opacity: 1, offset: .32 },
+      { transform: `translate3d(${tx - cw / 2}px, ${ty - 40}px, 0) scale(1)`, opacity: 1, offset: .8 },
+      { transform: `translate3d(${tx - cw / 2}px, ${ty - 52}px, 0) scale(.96)`, opacity: 0 },
+    ], { duration: 1500, easing: 'cubic-bezier(.22,1,.36,1)' });
+    burst(avEl, 'soft');
+    card.animate([{ boxShadow: '0 0 0 0 rgba(54,194,124,0)' }, { boxShadow: '0 0 0 3px rgba(54,194,124,.25), 0 10px 24px rgba(54,194,124,.12)', offset: .35 }, { boxShadow: '0 0 0 0 rgba(54,194,124,0)' }], { duration: 900, easing: 'ease-out' });
+  };
+  if (reduce) { deliver(); v3.classList.remove('on'); return; }
+  const t0 = performance.now(); let delivered = false;
+  const tick = now => {
+    const t = now - t0;
+    envRender(t, g);
+    if (t >= 2160 && !delivered) { delivered = true; deliver(); }
+    if (t < 2200) envRaf = requestAnimationFrame(tick);
+    else setTimeout(() => { if (!envRaf || true) v3.classList.remove('on'); }, 1550);
+  };
+  envRaf = requestAnimationFrame(tick);
+  window.__envFreeze = ms => { cancelAnimationFrame(envRaf); envRender(ms, g); };
+  window.__envDeliver = ms => { cancelAnimationFrame(envRaf); envRender(2300, g); deliver(); document.getAnimations().forEach(an => { an.pause(); an.currentTime = ms; }); };
 }
 
 // ---------- confetti (canvas inside the 375 x 812 frame) ----------
@@ -415,6 +493,7 @@ device.addEventListener('touchstart', e => { const t = e.target.closest('.tap');
   root.classList.add('shot');
   if (shot === 'detail') go('detail');
   if (shot === 'sheet' || shot === 'ent') { chip = shot === 'ent' ? 'Entertainment' : null; renderSheet(); open(sheet); }
+  if (shot === 'env') { addEventListener('load', () => setTimeout(() => { VER = 3; sendReminder('netflix:shree'); const ft = +new URLSearchParams(location.search).get('t'); const dv = new URLSearchParams(location.search).get('deliver'); if (dv) window.__envDeliver(+dv); else if (ft) window.__envFreeze(ft); }, 60)); }
   if (shot === 'modal') { sendReminder('netflix:shree');
     const ft = new URLSearchParams(location.search).get('t');
     if (ft !== null) { clearTimeout(autoClose); running.forEach(an => { an.pause(); an.currentTime = +ft; }); }
