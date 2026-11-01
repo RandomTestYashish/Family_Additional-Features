@@ -407,3 +407,13 @@ p { overflow-wrap: break-word; }
 /* softer centre glow */
 .v4-halo { background: radial-gradient(circle, rgba(76,201,140,0) 52%, rgba(76,201,140,.14) 62%, rgba(76,201,140,.05) 70%, rgba(76,201,140,0) 76%) !important; }
 .v4-burst { display: none; }
+
+/* ---------- V5: envelope delivered to a profile picture floating in the air ---------- */
+.v3 > .v5-me, .v3 > .v5-wait, .v3 > .v5-label { position: absolute; left: 0; top: 0; opacity: 0; will-change: transform, opacity; }
+.v5-me { width: 64px; height: 64px; z-index: 3; }
+.v5-av { position: absolute; inset: 0; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 3px #fff, 0 10px 26px rgba(15,23,42,.28); }
+.v5-badge { position: absolute; left: 44px; top: -3px; width: 22px; height: 22px; border-radius: 6px; object-fit: cover; box-shadow: 0 0 0 2px #fff, 0 3px 8px rgba(0,0,0,.25); opacity: 0; will-change: transform, opacity; }
+.v5-wait { width: 64px; height: 64px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.75); }
+.v5-label { padding: 7px 12px; border-radius: 100px; background: #fff; color: #292c31; font-weight: 600; font-size: 13px; line-height: 16px; white-space: nowrap;
+  box-shadow: 0 8px 22px rgba(15,23,42,.18); display: inline-flex; align-items: center; gap: 6px; }
+.v5-label::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: #36c27c url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.4l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat; }
