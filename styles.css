@@ -279,12 +279,25 @@ p { overflow-wrap: break-word; }
 @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .empty { padding: 32px 16px 8px; text-align: center; font-size: 14px; line-height: 20px; color: var(--caption); }
 
-.modal { position: absolute; left: 16px; top: 50%; width: 343px; background: #fff; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 20px; align-items: center;
-  transform: translateY(-50%) scale(.92); opacity: 0; transition: transform .3s cubic-bezier(.2,.9,.3,1.2), opacity .2s ease; }
+.modal { position: absolute; left: 16px; top: 50%; width: 343px; background: #fff; border-radius: 20px; padding: 32px 16px 28px; display: flex; flex-direction: column; gap: 22px; align-items: center; cursor: pointer;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.06);
+  transform: translateY(-50%) scale(.9); opacity: 0; transition: transform .5s cubic-bezier(.2,1.2,.35,1), opacity .25s ease; }
 .overlay.open .modal { transform: translateY(-50%); opacity: 1; }
-.modal-art { width: 100%; height: 146px; border-radius: 12px; background: #eafbff; }
-.modal-body { width: 100%; display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+.overlay.closing .modal { transform: translateY(-50%) scale(.96); opacity: 0; transition: transform .25s ease, opacity .2s ease; }
+.modal-body { width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.overlay.open .modal-body { animation: bodyIn .5s .12s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes bodyIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
+/* reveal: logo pops -> pill opens -> member appears -> logo docks as a badge on the member */
+.reveal { position: relative; width: 100%; height: 56px; }
+.reveal > * { position: absolute; left: 50%; top: 50%; will-change: transform, opacity; }
+.rv-av, .rv-logo { width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; object-fit: cover; }
+.rv-logo { z-index: 2; background: #000; }
+.rv-av { z-index: 1; opacity: 0; }
+.rv-pill { height: 56px; width: 56px; margin: -28px 0 0 0; transform: translateX(-50%); border-radius: 100px; background: linear-gradient(#f3f5f8, #eceff3); opacity: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.03); }
+.rv-ring { width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; border: 2px solid #ffb4b8; opacity: 0; }
+
+.confetti { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; }
 .toast { position: absolute; left: 50%; bottom: 120px; z-index: 20; transform: translate(-50%, 12px); background: #292c31; color: #fff; font-size: 13px; line-height: 18px; padding: 8px 14px; border-radius: 10px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .shot body { background: #fff; }

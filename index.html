@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Family – Additional Features</title>
-<link rel="stylesheet" href="fonts.css?v=3">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="fonts.css?v=4">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 <!-- Figma: Yashis-Imaginarium_22-jun, page "Family_Additional Features" (81564:168380), section "Manager's view".
@@ -228,19 +228,24 @@
     <!-- ================= Reminder sent (81564:172729) ================= -->
     <div class="overlay" id="modal" aria-hidden="true">
       <div class="scrim dark" data-close-modal></div>
-      <div class="modal" role="dialog" aria-labelledby="modalTitle">
-        <div class="modal-art"></div>
+      <div class="modal" role="dialog" aria-labelledby="modalTitle" data-close-modal>
+        <div class="reveal" aria-hidden="true">
+          <span class="rv-pill"></span>
+          <span class="rv-ring"></span>
+          <img class="rv-av" id="rvAvatar" src="assets/avatar-shree.png" alt="">
+          <img class="rv-logo" id="rvLogo" src="assets/logo-netflix.png" alt="">
+        </div>
         <div class="modal-body">
           <p class="t16b" id="modalTitle">Reminder sent successfully!</p>
           <p class="t14 cap2" id="modalText">Shree Verma has been notified about<br>the Netflix benefit.</p>
         </div>
-        <button class="tap btn-pri btn48" data-close-modal>Ok, Done</button>
       </div>
     </div>
 
+    <canvas class="confetti" id="confetti"></canvas>
     <div class="toast" id="toast"></div>
   </div>
 </div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

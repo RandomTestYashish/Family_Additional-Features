@@ -111,12 +111,116 @@ const sheet = document.getElementById('sheet'), modal = document.getElementById(
 function open(el) { el.classList.add('open'); el.setAttribute('aria-hidden', 'false'); }
 function close(el) { el.classList.remove('open'); el.setAttribute('aria-hidden', 'true'); }
 
+let pendingKey = null, autoClose;
 function sendReminder(key) {
   const [b, p] = key.split(':');
   sent.add(key);
-  document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); });
+  pendingKey = key;                       // the card flips to "sent" once the popup closes, so the user sees it happen
   document.getElementById('modalText').innerHTML = `${PEOPLE[p].full} has been notified about<br>the ${BENEFITS[b].name} benefit.`;
+  const av = document.getElementById('rvAvatar'), logo = document.getElementById('rvLogo');
+  av.src = A + (document.querySelector(`[data-remind="${key}"]`)?.closest('.bcard')?.querySelector('.av36 img')?.getAttribute('src')?.replace(A, '') || PEOPLE[p].avatar);
+  logo.src = A + BENEFITS[b].logo;
+  modal.classList.remove('closing');
   open(modal);
+  playReveal();
+}
+
+function closeModal() {
+  if (!modal.classList.contains('open')) return;
+  clearTimeout(autoClose);
+  modal.classList.add('closing');
+  setTimeout(() => {
+    close(modal); modal.classList.remove('closing');
+    if (pendingKey) {
+      const key = pendingKey; pendingKey = null;
+      document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); });
+    }
+  }, 220);
+}
+
+// ---------- popup reveal (Web Animations, one 1.7 s timeline) ----------
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let running = [];
+function playReveal() {
+  running.forEach(a => a.cancel()); running = [];
+  const q = s => modal.querySelector(s);
+  const logo = q('.rv-logo'), av = q('.rv-av'), pill = q('.rv-pill'), ring = q('.rv-ring');
+  const T = reduce ? 1 : 1750, ease = 'cubic-bezier(.22,1,.36,1)', spring = 'cubic-bezier(.3,1.5,.5,1)';
+  const opt = { duration: T, delay: reduce ? 0 : 160, fill: 'both' };
+  const tr = (x, y, s) => `translate(${x}px, ${y}px) scale(${s})`;
+  running.push(
+    logo.animate([
+      { offset: 0,    transform: tr(0, 0, .3), opacity: 0, boxShadow: '0 0 0 0 #fff', easing: spring },
+      { offset: .2,   transform: tr(0, 0, 1), opacity: 1, easing: ease },
+      { offset: .3,   transform: tr(0, 0, 1), easing: ease },
+      { offset: .46,  transform: tr(30, 0, 1), easing: ease },
+      { offset: .6,   transform: tr(30, 0, 1), boxShadow: '0 0 0 0 #fff', easing: 'cubic-bezier(.65,0,.35,1)' },
+      { offset: .84,  transform: tr(18, -18, .44), boxShadow: '0 0 0 4.5px #fff', easing: spring },
+      { offset: .92,  transform: tr(18, -18, .52) },
+      { offset: 1,    transform: tr(18, -18, .44), opacity: 1, boxShadow: '0 0 0 4.5px #fff' },
+    ], opt),
+    av.animate([
+      { offset: 0,    transform: tr(-30, 0, .5), opacity: 0 },
+      { offset: .4,   transform: tr(-30, 0, .5), opacity: 0, easing: spring },
+      { offset: .56,  transform: tr(-30, 0, 1), opacity: 1 },
+      { offset: .62,  transform: tr(-30, 0, 1), easing: 'cubic-bezier(.65,0,.35,1)' },
+      { offset: .84,  transform: tr(0, 0, 1), easing: spring },
+      { offset: .92,  transform: tr(0, 0, 1.06) },
+      { offset: 1,    transform: tr(0, 0, 1), opacity: 1 },
+    ], opt),
+    pill.animate([
+      { offset: 0,    width: '56px', opacity: 0 },
+      { offset: .26,  width: '56px', opacity: 0, easing: ease },
+      { offset: .3,   width: '56px', opacity: 1, easing: ease },
+      { offset: .48,  width: '124px', opacity: 1 },
+      { offset: .62,  width: '124px', opacity: 1, easing: 'cubic-bezier(.65,0,.35,1)' },
+      { offset: .84,  width: '56px', opacity: 0 },
+      { offset: 1,    width: '56px', opacity: 0 },
+    ], opt),
+  );
+  if (reduce) return finishReveal(false);
+  const done = running[0].finished.then(() => finishReveal(true)).catch(() => {});
+  // ring + confetti fire as the badge lands
+  setTimeout(() => { if (!modal.classList.contains('open')) return;
+    running.push(ring.animate([{ transform: 'scale(1)', opacity: .9 }, { transform: 'scale(2.1)', opacity: 0 }], { duration: 700, easing: 'cubic-bezier(.2,.8,.2,1)' }));
+    burst(av); navigator.vibrate?.(14);
+  }, 160 + T * .84);
+  return done;
+}
+function finishReveal() { clearTimeout(autoClose); autoClose = setTimeout(closeModal, 2400); }
+
+// ---------- confetti (canvas inside the 375 x 812 frame) ----------
+const cvs = document.getElementById('confetti'), ctx = cvs.getContext('2d');
+let parts = [], raf = 0;
+const COLORS = ['#E50914', '#FF5A5F', '#FFC145', '#2EC4B6', '#3A86FF', '#8338EC', '#FF8FAB', '#06D6A0'];
+function burst(fromEl) {
+  const dpr = Math.min(3, devicePixelRatio || 1), W = device.offsetWidth, H = device.offsetHeight;
+  if (cvs.width !== W * dpr) { cvs.width = W * dpr; cvs.height = H * dpr; }
+  const d = device.getBoundingClientRect(), r = fromEl.getBoundingClientRect(), k = W / d.width;
+  const ox = (r.left + r.width / 2 - d.left) * k, oy = (r.top + r.height / 2 - d.top) * k;
+  const add = (n, x, y, spread, base, sp) => { for (let i = 0; i < n; i++) {
+    const a = base + (Math.random() - .5) * spread, v = sp * (.55 + Math.random() * .7);
+    parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: .22 + Math.random() * .12, rot: Math.random() * 6.28, vr: (Math.random() - .5) * .35,
+      w: 5 + Math.random() * 5, h: 8 + Math.random() * 7, c: COLORS[i % COLORS.length], shape: Math.random() < .28 ? 'dot' : Math.random() < .5 ? 'rect' : 'ribbon',
+      life: 0, max: 95 + Math.random() * 55, tilt: Math.random() * 6.28 });
+  } };
+  add(70, ox, oy, Math.PI * 1.25, -Math.PI / 2, 11);          // main burst from the member
+  add(26, 24, oy + 40, Math.PI / 3, -Math.PI / 3, 12);        // side cannons
+  add(26, W - 24, oy + 40, Math.PI / 3, -Math.PI * 2 / 3, 12);
+  if (!raf) { let last = performance.now(); raf = requestAnimationFrame(function step(now) {
+    const dt = Math.min(2.5, (now - last) / 16.67); last = now;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    parts = parts.filter(p => (p.life += dt) < p.max && p.y < H + 30);
+    for (const p of parts) {
+      p.vx *= Math.pow(.985, dt); p.vy = p.vy * Math.pow(.985, dt) + p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; p.tilt += .12 * dt;
+      const fade = Math.min(1, (p.max - p.life) / 30);
+      ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c;
+      if (p.shape === 'dot') { ctx.beginPath(); ctx.arc(0, 0, p.w * .45, 0, 6.28); ctx.fill(); }
+      else { const sy = p.shape === 'ribbon' ? Math.cos(p.tilt) : 1; ctx.fillRect(-p.w / 2, -p.h / 2 * sy, p.w, p.h * sy); }
+      ctx.restore();
+    }
+    raf = parts.length ? requestAnimationFrame(step) : (ctx.clearRect(0, 0, W, H), 0);
+  }); }
 }
 
 // ---------- navigation ----------
@@ -142,12 +246,12 @@ function toast(msg) {
 }
 
 device.addEventListener('click', e => {
-  const t = e.target.closest('button, [data-close-sheet], [data-close-modal], .tap');
+  const t = e.target.closest('[data-close-modal], button, [data-close-sheet], .tap');
   if (!t) return;
   if (t.dataset.remind && !t.disabled) return sendReminder(t.dataset.remind);
   if (t.hasAttribute('data-open-sheet')) { chip = null; renderSheet(); sheet.querySelector('.sheet-scroll').scrollTop = 0; return open(sheet); }
   if (t.hasAttribute('data-close-sheet')) return close(sheet);
-  if (t.hasAttribute('data-close-modal')) return close(modal);
+  if (t.hasAttribute('data-close-modal')) return closeModal();
   if (t.dataset.chip) { chip = chip === t.dataset.chip ? null : t.dataset.chip; return renderSheet(); }
   if (t.dataset.go) return go(t.dataset.go);
   if (t.hasAttribute('data-add')) { t.textContent = 'Added ✓'; t.disabled = true; return toast('1 GB Data Loan added'); }
@@ -155,7 +259,7 @@ device.addEventListener('click', e => {
 
 addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (modal.classList.contains('open')) close(modal);
+  if (modal.classList.contains('open')) closeModal();
   else if (sheet.classList.contains('open')) close(sheet);
   else if (current !== 'home') go('home');
 });
@@ -171,7 +275,9 @@ device.addEventListener('touchstart', e => { const t = e.target.closest('.tap');
   root.classList.add('shot');
   if (shot === 'detail') go('detail');
   if (shot === 'sheet' || shot === 'ent') { chip = shot === 'ent' ? 'Entertainment' : null; renderSheet(); open(sheet); }
-  if (shot === 'modal') sendReminder('netflix:shree');
+  if (shot === 'modal') { sendReminder('netflix:shree');
+    const ft = new URLSearchParams(location.search).get('t');
+    if (ft !== null) { clearTimeout(autoClose); running.forEach(an => { an.pause(); an.currentTime = +ft; }); } }
   const full = false, y = +new URLSearchParams(location.search).get('y') || 0;
   addEventListener('load', () => { screens[current].querySelector('.scroll').scrollTop = y; });
   const set = () => {
