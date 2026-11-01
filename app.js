@@ -120,7 +120,7 @@ function close(el) { el.classList.remove('open'); el.setAttribute('aria-hidden',
 let pendingKey = null, autoClose;
 // ---------- version (V1 badge reveal / V2 fly to member) ----------
 const verSel = document.getElementById('ver');
-let VER = (() => { const q = new URLSearchParams(location.search).get('ver'); const ok = v => [1, 2, 3, 4, 5].includes(+v) ? +v : 1; if (q) return ok(q); try { return ok(localStorage.getItem('fam-ver')); } catch { return 1; } })();
+let VER = (() => { const q = new URLSearchParams(location.search).get('ver'); const ok = v => [1, 2, 3, 4, 5, 6].includes(+v) ? +v : 1; if (q) return ok(q); try { return ok(localStorage.getItem('fam-ver')); } catch { return 1; } })();
 verSel.value = String(VER);
 verSel.addEventListener('change', () => {
   VER = +verSel.value;
@@ -129,13 +129,14 @@ verSel.addEventListener('change', () => {
   sent.clear();                                   // reset the cards so the new animation can be tried straight away
   homeList.innerHTML = LISTS.home.map(card).join(''); detailList.innerHTML = LISTS.detail.map(card).join('');
   if (sheet.classList.contains('open')) renderSheet();
-  toast(['', 'V1 · Badge reveal', 'V2 · Fly to member', 'V3 · Envelope', 'V4 · Envelope popup', 'V5 · Envelope in the air'][VER]);
+  toast(['', 'V1 · Badge reveal', 'V2 · Fly to member', 'V3 · Envelope', 'V4 · Envelope popup', 'V5 · Envelope in the air', 'V6 · Big envelope'][VER]);
 });
 function sendReminder(key) {
   const [b, p] = key.split(':');
   sent.add(key);
   if (VER === 3) return playEnvelope(key);
   if (VER === 5) return playV5(key);
+  if (VER === 6) return playV6(key);
   pendingKey = key;                       // the card flips to "sent" once the popup closes, so the user sees it happen
   document.getElementById('modalText').innerHTML = `${PEOPLE[p].full} has been notified about<br>the ${BENEFITS[b].name} benefit.`;
   const av = document.getElementById('rvAvatar'), logo = document.getElementById('rvLogo');
@@ -467,17 +468,70 @@ function playV4() {
   v4Raf = requestAnimationFrame(tick);
 }
 
-// ---------- V5: one element at a time, in the air; nothing plays on the card ----------
-// dim -> big half-envelope rises from the bottom -> big logo pops mid-screen -> dives in -> flap + seal
-// -> envelope lifts, shrinking, to the centre where the profile appears -> tucks into it -> badge -> line -> dissolve
-const V5T = { dim: [0, 450], rise: [250, 1050], pop: [950, 1450], dive: [1700, 2300], flap: [2300, 2750], seal: [2700, 2980],
-  lift: [3050, 3980], prof: [3250, 3800], tuck: [3820, 4180], badge: [4180, 4520], label: [4400, 4750], out: [5500, 6050] };
+// ---------- V5: everything happens in the air; nothing plays on the card ----------
 let v5Raf = 0, v5Tick = 0;
 function v5Render(t, g) {
+  envRender(t, g);
+  const q = sel => v3.querySelector(sel);
+  const me = q('.v5-me'), badge = q('.v5-badge'), label = q('.v5-label'), waits = v3.querySelectorAll('.v5-wait'), scrim = q('.v3-scrim');
+  const [fa, fb] = g.flight, D0 = g.D0;
+  // dim in, and out with the dissolve
+  scrim.style.opacity = smooth(seg(t, 0, 320)) * (1 - smooth(seg(t, D0, D0 + 520)));
+  // profile floats in up top, waits with soft ripples, takes the envelope, glides to centre
+  const inA = seg(t, 260, 760), land = seg(t, fb - 60, fb + 320), centre = seg(t, fb + 240, fb + 860), out = seg(t, D0, D0 + 480);
+  const c = smooth(centre), hit = Math.sin(Math.PI * land) * (1 - land) * .14;
+  const float = Math.sin(t / 520) * 3 * (1 - c);                                    // gentle hover while waiting
+  const px = lerp(g.tx, g.mx, c), py = lerp(g.ty, g.my, c) + float;
+  const ps = lerp(.6, 1, easeOutBack(inA)) * lerp(1, 1.45, c) * (1 - hit) * lerp(1, 1.08, smooth(out));
+  me.style.transform = `translate3d(${px - 32}px, ${py - 32}px, 0) scale(${ps})`;
+  me.style.opacity = smooth(inA) * (1 - smooth(out));
+  const b = seg(t, fb - 40, fb + 300);
+  badge.style.transform = `scale(${easeOutBack(b)}) rotate(${lerp(-24, 0, smooth(b))}deg)`; badge.style.opacity = smooth(b);
+  const waitOn = smooth(seg(t, 500, 900)) * (1 - smooth(seg(t, fb - 200, fb + 40)));
+  waits.forEach((w, i) => { const ph = ((t / 1250) + i * .5) % 1;
+    w.style.transform = `translate3d(${px - 32}px, ${py - 32}px, 0) scale(${lerp(1, 1.7, easeOut(ph))})`; w.style.opacity = (1 - ph) * .7 * waitOn; });
+  // a small confirmation line under the centred profile
+  const l = seg(t, fb + 700, fb + 1000), lw = label.offsetWidth || 180;
+  label.style.transform = `translate3d(${g.mx - lw / 2}px, ${g.my + 32 * 1.45 + 14 + (1 - smooth(l)) * 8}px, 0) scale(${lerp(1, .96, smooth(out))})`;
+  label.style.opacity = smooth(l) * (1 - smooth(out));
+}
+function playV5(key) {
+  cancelAnimationFrame(v5Raf);
+  const [b, p] = key.split(':');
+  const avSrc = document.querySelector(`[data-remind="${key}"]`)?.closest('.bcard')?.querySelector('.av36 img')?.getAttribute('src') || A + PEOPLE[p].avatar;
+  v3.querySelector('.v5-av').src = avSrc;
+  v3.querySelector('.v5-badge').src = v3.querySelector('.env-logo').src = A + BENEFITS[b].logo;
+  v3.querySelector('.v5-label').textContent = `Reminder sent to ${PEOPLE[p].short}`;
+  const H = device.offsetHeight;
+  const g = { root: v3, cx: 150, cy: H * .52, tx: 268, ty: H * .25, ky: H * .16, mx: 187.5, my: H * .42,
+    base: 1, end: .14, flight: [1600, 2440], ease: easeInOutSine, late: true, D0: 2440 + 1500 };
+  const END = g.D0 + 560;
+  v3.classList.add('on'); v5Render(0, g);
+  const finish = () => { v3.classList.remove('on'); document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); }); };
+  if (reduce) { finish(); return; }
+  const t0 = performance.now(); let sparked = false;
+  const tick = now => {
+    const t = now - t0;
+    v5Render(t, g);
+    if (t > g.flight[0] + 60 && t < g.flight[1] - 60 && g.pos && (v5Tick = (v5Tick + 1) % 5) === 0) sparkAt(g.pos[0], g.pos[1], 1);
+    if (t >= g.flight[1] - 40 && !sparked) { sparked = true; navigator.vibrate?.(10); burst(v3.querySelector('.v5-badge'), 'soft'); }
+    if (t < END) v5Raf = requestAnimationFrame(tick); else finish();
+  };
+  v5Raf = requestAnimationFrame(tick);
+  window.__v5Freeze = ms => { cancelAnimationFrame(v5Raf); v5Render(ms, g); };
+}
+
+// ---------- V6: one element at a time, in the air; nothing plays on the card ----------
+// dim -> big half-envelope rises from the bottom -> big logo pops mid-screen -> dives in -> flap + seal
+// -> envelope lifts, shrinking, to the centre where the profile appears -> tucks into it -> badge -> line -> dissolve
+const V6T = { dim: [0, 450], rise: [250, 1050], pop: [950, 1450], dive: [1700, 2300], flap: [2300, 2750], seal: [2700, 2980],
+  lift: [3050, 3980], prof: [3250, 3800], tuck: [3820, 4180], badge: [4180, 4520], label: [4400, 4750], out: [5500, 6050] };
+let v6Raf = 0, v6Tick = 0;
+function v6Render(t, g) {
   const q = sel => v3.querySelector(sel);
   const env = q('.env'), logo = q('.env-logo'), flap = q('.env-flap'), seal = q('.env-seal'), shadow = q('.env-shadow');
   const me = q('.v5-me'), badge = q('.v5-badge'), label = q('.v5-label'), waits = v3.querySelectorAll('.v5-wait'), scrim = q('.v3-scrim');
-  const S = k => seg(t, V5T[k][0], V5T[k][1]);
+  const S = k => seg(t, V6T[k][0], V6T[k][1]);
   const out = smooth(S('out'));
   scrim.style.opacity = smooth(S('dim')) * (1 - out);
   // envelope: rises to half-visible at the bottom (big), later lifts to the centre while shrinking, then tucks into the profile
@@ -489,13 +543,13 @@ function v5Render(t, g) {
   const sc = lerp(lerp(BIG, MID, lift), .1, tuck);
   const rot = Math.sin(Math.PI * lift) * -7;
   env.style.transform = `translate3d(${187.5 - ENV.W / 2}px, ${by - ENV.H / 2}px, 0) rotate(${rot}deg) scale(${sc})`;
-  env.style.opacity = smooth(S('rise')) * (1 - smooth(seg(t, V5T.tuck[0], V5T.tuck[1])));
+  env.style.opacity = smooth(S('rise')) * (1 - smooth(seg(t, V6T.tuck[0], V6T.tuck[1])));
   shadow.style.opacity = 0;
   g.pos = [187.5, by];
   // logo: pops big in the middle of the screen, floats, then dives into the envelope
   const pop = S('pop'), dive = smooth(S('dive'));
   const startLy = 52 + (g.my - (g.H + 6)) / BIG;                         // env-local y that sits at screen centre
-  const hover = Math.sin(Math.max(0, t - V5T.pop[1]) / 380) * 4 * (1 - dive);
+  const hover = Math.sin(Math.max(0, t - V6T.pop[1]) / 380) * 4 * (1 - dive);
   const ly = lerp(startLy, 50, dive) + hover / BIG;
   const ls = easeOutBack(pop) * lerp(1.08, .8, dive);
   const lr = lerp(-8, 0, smooth(pop)) + Math.sin(Math.PI * dive) * 4;
@@ -503,26 +557,26 @@ function v5Render(t, g) {
   // flap closes (3D), logo tucked away under it, then the seal
   const ang = lerp(180, 0, smooth(S('flap')));
   flap.style.transform = `rotateX(${ang}deg)`; flap.style.zIndex = ang < 90 ? 4 : 1;
-  logo.style.opacity = smooth(pop) * (1 - smooth(seg(t, V5T.flap[0] + 40, V5T.flap[0] + 220)));
+  logo.style.opacity = smooth(pop) * (1 - smooth(seg(t, V6T.flap[0] + 40, V6T.flap[0] + 220)));
   const st = S('seal');
   seal.style.transform = `scale(${easeOutBack(st)})`; seal.style.opacity = smooth(st);
   // profile: appears in the centre only once the envelope is on its way, waits with ripples, takes the envelope
-  const pIn = S('prof'), land = seg(t, V5T.tuck[1] - 60, V5T.tuck[1] + 320);
+  const pIn = S('prof'), land = seg(t, V6T.tuck[1] - 60, V6T.tuck[1] + 320);
   const hit = Math.sin(Math.PI * land) * (1 - land) * .12;
   const ps = 1.5 * lerp(.55, 1, easeOutBack(pIn)) * (1 - hit) * lerp(1, 1.06, out);
   me.style.transform = `translate3d(${187.5 - 32}px, ${g.my - 32}px, 0) scale(${ps})`;
   me.style.opacity = smooth(pIn) * (1 - out);
   const b = S('badge');
   badge.style.transform = `scale(${easeOutBack(b)}) rotate(${lerp(-24, 0, smooth(b))}deg)`; badge.style.opacity = smooth(b);
-  const waitOn = smooth(seg(t, V5T.prof[0] + 200, V5T.prof[1] + 100)) * (1 - smooth(seg(t, V5T.tuck[0], V5T.tuck[1])));
+  const waitOn = smooth(seg(t, V6T.prof[0] + 200, V6T.prof[1] + 100)) * (1 - smooth(seg(t, V6T.tuck[0], V6T.tuck[1])));
   waits.forEach((w, i) => { const ph = ((t / 1300) + i * .5) % 1;
     w.style.transform = `translate3d(${187.5 - 32}px, ${g.my - 32}px, 0) scale(${1.5 * lerp(1, 1.55, easeOut(ph))})`; w.style.opacity = (1 - ph) * .6 * waitOn; });
   const l = S('label'), lw = label.offsetWidth || 180;
   label.style.transform = `translate3d(${187.5 - lw / 2}px, ${g.my + 48 + 18 + (1 - smooth(l)) * 10}px, 0)`;
   label.style.opacity = smooth(l) * (1 - out);
 }
-function playV5(key) {
-  cancelAnimationFrame(v5Raf);
+function playV6(key) {
+  cancelAnimationFrame(v6Raf);
   const [b, p] = key.split(':');
   const avSrc = document.querySelector(`[data-remind="${key}"]`)?.closest('.bcard')?.querySelector('.av36 img')?.getAttribute('src') || A + PEOPLE[p].avatar;
   v3.querySelector('.v5-av').src = avSrc;
@@ -530,20 +584,20 @@ function playV5(key) {
   v3.querySelector('.v5-label').textContent = `Reminder sent to ${PEOPLE[p].short}`;
   const H = device.offsetHeight;
   const g = { H, my: H * .42, big: 2.25 };
-  const END = V5T.out[1] + 40;
-  v3.classList.add('on', 'v5'); v5Render(0, g);
-  const finish = () => { v3.classList.remove('on', 'v5'); document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); }); };
+  const END = V6T.out[1] + 40;
+  v3.classList.add('on', 'v6'); v6Render(0, g);
+  const finish = () => { v3.classList.remove('on', 'v6'); document.querySelectorAll(`[data-remind="${key}"]`).forEach(btn => { btn.outerHTML = remindBtn(key, true); }); };
   if (reduce) { finish(); return; }
   const t0 = performance.now(); let sparked = false;
   const tick = now => {
     const t = now - t0;
-    v5Render(t, g);
-    if (t > V5T.lift[0] + 120 && t < V5T.tuck[0] && (v5Tick = (v5Tick + 1) % 6) === 0) sparkAt(g.pos[0], g.pos[1], 1);
-    if (t >= V5T.tuck[1] - 40 && !sparked) { sparked = true; navigator.vibrate?.(10); burst(v3.querySelector('.v5-badge'), 'soft'); }
-    if (t < END) v5Raf = requestAnimationFrame(tick); else finish();
+    v6Render(t, g);
+    if (t > V6T.lift[0] + 120 && t < V6T.tuck[0] && (v6Tick = (v6Tick + 1) % 6) === 0) sparkAt(g.pos[0], g.pos[1], 1);
+    if (t >= V6T.tuck[1] - 40 && !sparked) { sparked = true; navigator.vibrate?.(10); burst(v3.querySelector('.v5-badge'), 'soft'); }
+    if (t < END) v6Raf = requestAnimationFrame(tick); else finish();
   };
-  v5Raf = requestAnimationFrame(tick);
-  window.__v5Freeze = ms => { cancelAnimationFrame(v5Raf); v5Render(ms, g); };
+  v6Raf = requestAnimationFrame(tick);
+  window.__v6Freeze = ms => { cancelAnimationFrame(v6Raf); v6Render(ms, g); };
 }
 
 // ---------- confetti (canvas inside the 375 x 812 frame) ----------
@@ -659,6 +713,7 @@ device.addEventListener('touchstart', e => { const t = e.target.closest('.tap');
   root.classList.add('shot');
   if (shot === 'detail') go('detail');
   if (shot === 'sheet' || shot === 'ent') { chip = shot === 'ent' ? 'Entertainment' : null; renderSheet(); open(sheet); }
+  if (shot === 'v6') { addEventListener('load', () => setTimeout(() => { VER = 6; sendReminder('netflix:shree'); const ft = +new URLSearchParams(location.search).get('t'); if (ft) window.__v6Freeze(ft); }, 60)); }
   if (shot === 'v5') { addEventListener('load', () => setTimeout(() => { VER = 5; sendReminder('netflix:shree'); const ft = +new URLSearchParams(location.search).get('t'); if (ft) window.__v5Freeze(ft); }, 60)); }
   if (shot === 'env') { addEventListener('load', () => setTimeout(() => { VER = 3; sendReminder('netflix:shree'); const ft = +new URLSearchParams(location.search).get('t'); const dv = new URLSearchParams(location.search).get('deliver'); if (dv) window.__envDeliver(+dv); else if (ft) window.__envFreeze(ft); }, 60)); }
   if (shot === 'modal') { sendReminder('netflix:shree');
