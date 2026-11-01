@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Family – Additional Features</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- Figma: Yashis-Imaginarium_22-jun, page "Family_Additional Features" (81564:168380), section "Manager's view".
+     Every screen is the 375 x 812 design frame; other viewports scale it, never re-lay it out. -->
+<div class="stage">
+  <div class="device" id="device">
+
+    <!-- ================= Family landing (81564:172456) ================= -->
+    <section class="screen active" id="home" aria-label="My Family">
+      <div class="scroll">
+        <div class="page home-page">
+          <div class="hero">
+            <div class="statusbar" data-statusbar></div>
+            <button class="tap topnav-menu" aria-label="Menu"><img src="assets/menu.svg" alt=""></button>
+            <button class="tap topnav-more" aria-label="More"><img src="assets/more.png" alt=""></button>
+
+            <img class="glow" src="assets/ellipse19119.svg" alt="" style="top:210.02px">
+            <img class="glow" src="assets/ellipse19118.svg" alt="" style="top:153.47px">
+            <div class="orbit">
+              <img class="orbit-e1" src="assets/ellipse19122.svg" alt="">
+              <img class="orbit-e2" src="assets/ellipse19123.svg" alt="">
+              <p class="orbit-title">My Connected<br>Family</p>
+            </div>
+            <div class="pk"><img src="assets/last-cell.svg" alt=""><span>PK</span></div>
+            <div id="relations"></div>
+          </div>
+
+          <div class="home-body">
+            <!-- Add members -->
+            <div class="addm">
+              <p class="t16b">Add members to your family</p>
+              <p class="t14 cap">Manage all connections, bills and get support for them at one place.</p>
+              <button class="tap btn-add"><img src="assets/add-white.svg" alt="">Add Member</button>
+            </div>
+
+            <!-- Pack status cards -->
+            <div class="hscroll status-row">
+              <div class="scard">
+                <div class="scard-ill"><div class="ill"><span class="ill-live"><img class="ill-a" src="assets/bill-issues.png" alt=""><span class="ill-b"><img src="assets/bill-issues.png" alt=""></span></span></div></div>
+                <div class="scard-body"><p class="t16b">₹199 pack expired on 21 May</p><p class="t14 cap">Prepaid •7787878787</p></div>
+                <button class="tap btn-pri btn40">Repeat Recharge</button>
+              </div>
+              <div class="scard">
+                <div class="scard-ill"><div class="ill"><span class="ill-live"><img class="ill-a" src="assets/bill-issues.png" alt=""><span class="ill-b"><img src="assets/bill-issues.png" alt=""></span></span></div></div>
+                <div class="scard-body"><p class="t16b">₹199 pack expired on 21 May</p><p class="t14 cap">Prepaid •7787878787</p></div>
+                <button class="tap btn-pri btn40">Repeat Recharge</button>
+              </div>
+            </div>
+
+            <!-- Household payments -->
+            <div class="sec">
+              <div class="sec-title"><p class="overline">Household Payments</p><button class="tap link">View All</button></div>
+              <div class="hscroll tiles">
+                <button class="tap tile"><span class="tile-img"><img src="assets/tile-electricity.png" alt="" style="height:135.77%;left:9.67%;top:-10.79%;width:80.65%"></span><span class="tile-t">Electricity<br>Bill</span></button>
+                <button class="tap tile"><span class="tile-img"><img src="assets/tile-cylinder.png" alt="" style="height:136.22%;left:9.54%;top:-4.11%;width:80.92%"></span><span class="tile-t">Book Cylinder</span></button>
+                <button class="tap tile"><span class="tile-img"><img src="assets/tile-fastag.png" alt="" style="height:162.66%;left:-0.08%;top:-30.49%;width:96.63%"></span><span class="tile-t">FASTag</span><span class="tile-fastag"><img src="assets/tile-fastag-overlay.png" alt=""></span></button>
+                <button class="tap tile"><span class="tile-img"><img src="assets/tile-credit.png" alt="" style="height:137.43%;left:9.18%;top:-7.46%;width:81.64%"></span><span class="tile-t">Credit Card<br>Bill</span></button>
+                <button class="tap tile"><span class="tile-img"><img src="assets/tile-addbill.png" alt="" style="height:121.67%;left:13.86%;top:-0.03%;width:72.28%"></span><span class="tile-t">Add<br>Bill</span></button>
+              </div>
+            </div>
+
+            <!-- Your family benefits -->
+            <div class="sec">
+              <div class="sec-title"><p class="overline">Your Family Benefits</p><button class="tap link" data-open-sheet>View All</button></div>
+              <div class="cards" id="homeBenefits"></div>
+            </div>
+
+            <!-- Safety report -->
+            <div class="sec">
+              <div class="sec-title h16"><p class="overline with-icon"><span class="safe"><img src="assets/airtel-safe.svg" alt=""></span>Your Family Safety report</p></div>
+              <div class="hscroll fraud-row">
+                <div class="fraud">
+                  <div class="ring"><img src="assets/fraud-ring.svg" alt=""><div class="ring-n"><b>12</b><span>Frauds detected</span></div></div>
+                  <p class="fraud-t">Kartike has many fraud activities. Stay alert!</p>
+                  <button class="tap link link-ico">View Report<img src="assets/arrow-right-blue.svg" alt=""></button>
+                </div>
+                <div class="fraud">
+                  <div class="ring"><img src="assets/fraud-ring.svg" alt=""><div class="ring-n"><b>04</b><span>Frauds detected</span></div></div>
+                  <p class="fraud-t">Harshit has fraud alerts. Stay alert to protect him!</p>
+                  <button class="tap link link-ico">View Report<img src="assets/arrow-right-blue.svg" alt=""></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Family members -->
+            <div class="sec">
+              <div class="sec-title h16"><p class="overline">Family Members</p><button class="tap more16" aria-label="More"><img src="assets/more-dots.svg" alt=""></button></div>
+              <div class="members">
+                <button class="tap member center"><span class="mav"><img src="assets/member-poornima-bg.png" alt=""></span><span class="mtxt"><b>Poornima (You)</b><span>₹ 349 • 5G unlimited data • 1 additional pack</span></span><img class="chev" src="assets/chevron-right.svg" alt=""></button>
+                <button class="tap member" data-go="detail"><span class="mav"><img src="assets/member-harshit-bg.png" alt=""><i class="dot"></i></span><span class="mtxt"><b>Harshit Vig</b><span>₹ 349 • 5G unlimited data • 1 additional pack</span></span><img class="chev" src="assets/chevron-right.svg" alt=""></button>
+                <button class="tap member"><span class="mav"><img src="assets/member-kartike-bg.png" alt=""><img class="mav-in" src="assets/member-kartike.png" alt=""><i class="dot"></i></span><span class="mtxt"><b>Kartike Mane</b><span>₹ 349 • 5G unlimited data • 1 additional pack</span></span><img class="chev" src="assets/chevron-right.svg" alt=""></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav (pinned to the screen bottom) -->
+      <nav class="bnav">
+        <div class="bnav-unit">
+          <div class="bnav-ind"></div>
+          <div class="bnav-dest">
+            <button class="tap bnav-i"><span class="bnav-ic"><img src="assets/nav-airtel.svg" alt="" style="width:24px;height:24px"></span>Manage</button>
+            <button class="tap bnav-i"><span class="bnav-ic"><img src="assets/nav-finance.svg" alt="" style="width:20px;height:20px"></span>Finance</button>
+            <button class="tap bnav-i on"><span class="bnav-ic"><img src="assets/nav-family.svg" alt="" style="width:24px;height:24px"></span>Family</button>
+            <button class="tap bnav-i"><span class="bnav-ic"><img src="assets/nav-askus.svg" alt="" style="width:18px;height:18px;transform:scaleX(-1)"></span>Ask Us</button>
+          </div>
+        </div>
+      </nav>
+    </section>
+
+    <!-- ================= Service detail (81564:172072) ================= -->
+    <section class="screen" id="detail" aria-label="Harshit's prepaid">
+      <div class="scroll">
+        <div class="page detail-page">
+          <header class="dhead">
+            <div class="statusbar" data-statusbar></div>
+            <div class="dnav">
+              <button class="tap hicon" data-go="home" aria-label="Back"><img src="assets/hdr-circle.svg" alt=""><span><img src="assets/arrow-left.svg" alt=""></span></button>
+              <div class="dnav-t"><b>prepaid</b><span>9899699929</span></div>
+              <button class="tap hicon" aria-label="Help"><img src="assets/hdr-circle.svg" alt=""><span><img src="assets/help.svg" alt=""></span></button>
+            </div>
+          </header>
+
+          <div class="dbody">
+            <!-- Pack -->
+            <div class="ocard sh-soft">
+              <div class="o-in">
+                <div class="o-head"><p class="o-over">PACK</p><span class="tag sm success">Active</span></div>
+                <p class="o-title">₹349 infinity plan</p>
+                <div class="kp3">
+                  <div class="kp"><span>Data</span><b>2 GB/day</b></div>
+                  <div class="kp"><span>Calls</span><b>Unlimited</b></div>
+                  <div class="kp"><span>SMS</span><b>100/day</b></div>
+                </div>
+                <div class="kp valid"><span>Valid Till</span><b>11 May 2026</b></div>
+                <div class="acts"><button class="tap btn-sec btn40">View Details</button><button class="tap btn-pri btn40">Recharge</button></div>
+              </div>
+            </div>
+
+            <!-- Usage -->
+            <div class="ocard sh">
+              <div class="o-in">
+                <p class="o-over cap">USAGE</p>
+                <div class="usage">
+                  <div class="kp dark"><span>Daily Data</span><b>1.1 GB of 2 GB left</b><i class="bar"><i style="width:60%"></i></i></div>
+                  <div class="kp dark"><span>5G Data Top-up</span><b>Unlimited</b><i class="bar"></i></div>
+                  <div class="kp dark"><span>Daily SMS</span><b>100 of 100 left</b><i class="bar"><i style="width:60%"></i></i><em>Auto-renews every day at midnight till 12 May 2026</em></div>
+                </div>
+                <button class="tap callout"><b>Track your mobile data usage</b><span>with out new &amp; detailed dashboard</span></button>
+                <div class="acts"><button class="tap btn-sec btn40">Track Data Usage</button><button class="tap btn-pri btn40 nob">Buy Data</button></div>
+              </div>
+            </div>
+
+            <!-- Harshit's benefits -->
+            <div class="dsec">
+              <p class="overline">Harshit’s Benefits</p>
+              <div class="cards" id="detailBenefits"></div>
+            </div>
+
+            <!-- Pack add-ons -->
+            <div class="ocard sh">
+              <div class="o-in">
+                <p class="o-over cap">PACK ADD-ONS</p>
+                <button class="tap addon">
+                  <span class="addon-ic"><img class="frame" src="assets/icon-frame.svg" alt=""><span><img src="assets/data-topup.svg" alt=""></span></span>
+                  <span class="addon-b">
+                    <span class="addon-ov">DATA TOP-UP</span>
+                    <span class="addon-t"><b>5G Pack</b><span class="tag sm success">Active</span></span>
+                    <span class="addon-s">Expires on 12 May 2026</span>
+                    <b class="addon-free">Free</b>
+                  </span>
+                  <img class="chev" src="assets/chevron-right2.svg" alt="">
+                </button>
+              </div>
+            </div>
+
+            <!-- Recommended add-ons -->
+            <div class="rsec">
+              <p class="rtitle">Recommended Add-Ons</p>
+              <div class="widget">
+                <div class="w-top"><b>1 GB Data Loan</b><span class="tag sm">info tag</span></div>
+                <p class="w-desc">Stay connected with high speed data</p>
+                <div class="w-row"><div class="w-amt"><b>₹0</b><span>Valid for 1 Day</span></div><button class="tap btn-sec btn40" data-add>Add +</button></div>
+              </div>
+            </div>
+
+            <!-- Recommended product -->
+            <div class="rsec">
+              <p class="rtitle">Recommended Product</p>
+              <div class="hscroll banners">
+                <img class="tap" src="assets/banner3.png" alt="">
+                <img class="tap" src="assets/banner4.png" alt="">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Remind sheet (81564:171764 / 81564:172173) ================= -->
+    <div class="overlay" id="sheet" aria-hidden="true">
+      <div class="scrim" data-close-sheet></div>
+      <div class="sheet-wrap">
+        <button class="tap sheet-x" data-close-sheet aria-label="Close"><img src="assets/close.svg" alt=""></button>
+        <div class="sheet">
+          <div class="sheet-scroll">
+            <div class="sheet-head">
+              <p class="t16b">Remind your family members</p>
+              <p class="t14 cap">Select the benefits you want to remind each family member about</p>
+            </div>
+            <p class="overline sheet-ov">All Benefits</p>
+            <div class="hscroll chips" id="chips"></div>
+            <div class="cards" id="sheetBenefits"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Reminder sent (81564:172729) ================= -->
+    <div class="overlay" id="modal" aria-hidden="true">
+      <div class="scrim dark" data-close-modal></div>
+      <div class="modal" role="dialog" aria-labelledby="modalTitle">
+        <div class="modal-art"></div>
+        <div class="modal-body">
+          <p class="t16b" id="modalTitle">Reminder sent successfully!</p>
+          <p class="t14 cap2" id="modalText">Shree Verma has been notified about<br>the Netflix benefit.</p>
+        </div>
+        <button class="tap btn-pri btn48" data-close-modal>Ok, Done</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

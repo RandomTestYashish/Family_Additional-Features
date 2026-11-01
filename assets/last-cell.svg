@@ -1,0 +1,16 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="last cell">
+<path d="M26 50C39.2548 50 50 39.2548 50 26C50 12.7452 39.2548 2 26 2C12.7452 2 2 12.7452 2 26C2 39.2548 12.7452 50 26 50Z" fill-rule="evenodd" clip-rule="evenodd" fill="url(#paint0_linear_0_58)"/>
+<mask id="stroke0_0_58" maskUnits="userSpaceOnUse" x="0" y="0" width="52" height="52" fill="black">
+<rect fill="white" width="52" height="52"/>
+<path d="M26 50C39.2548 50 50 39.2548 50 26C50 12.7452 39.2548 2 26 2C12.7452 2 2 12.7452 2 26C2 39.2548 12.7452 50 26 50Z" fill-rule="evenodd" clip-rule="evenodd"/>
+</mask>
+<path d="M26 50C39.2548 50 50 39.2548 50 26C50 12.7452 39.2548 2 26 2C12.7452 2 2 12.7452 2 26C2 39.2548 12.7452 50 26 50Z" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#F2F4F7" mask="url(#stroke0_0_58)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_58" x1="26" y1="50" x2="26" y2="2" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E6F0FF"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+</defs>
+</svg>
